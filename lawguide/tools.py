@@ -81,9 +81,14 @@ def _norm_text(s: str) -> str:
     return re.sub(r"\s+", "", s)
 
 
+def _related(d: dict) -> list:
+    return d.get("cited_by", [])[:config.RELATED_MAX]
+
+
 def _section_view(d: dict, max_chars: int) -> dict:
     return {"law_name": d["law_name"], "section_no": d["section_no"], "chapter": d["chapter"],
             "text": d["text"][:max_chars], "amendment_notes": d.get("amendment_notes", []),
+            "cited_by": _related(d),
             "version_flags": [f["message"] for f in d.get("version_flags", [])],
             "source_url": d["source_url"], "official_url": d.get("official_url"), "source_retrieved": d["source_retrieved"],
             "checked_on": d["checked_on"]}
@@ -137,6 +142,7 @@ class ToolExecutor:
         if d:
             self._remember([d])
             res["version_flags"] = [f["message"] for f in d.get("version_flags", [])]
+            res["cited_by"] = _related(d)
             if quoted_text:
                 res["quote_found"] = _norm_text(quoted_text) in _norm_text(d["text"])
                 if not res["quote_found"]:

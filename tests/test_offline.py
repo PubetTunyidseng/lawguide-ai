@@ -34,7 +34,9 @@ def test_parser_and_versions():
     assert [f["status"] for f in by["41"]["version_flags"]] == ["updated"]
     assert [f["status"] for f in by["59"]["version_flags"]] == ["possibly_outdated"]
     assert any("มาตรา 4/1" in w for w in report["corpus_version_warnings"])   # มาตราใหม่ที่หายไป
-    assert "มาตรา ๕๙" in by["41"]["text"]                                    # การอ้างในเนื้อความไม่ถูกตัดเป็นมาตราใหม่
+    assert "มาตรา ๕๙" in by["41"]["text"]
+    assert by["41"]["cites"] == ["59"]                                       # กราฟอ้างอิงจากเนื้อความ
+    assert [x["section_no"] for x in by["59"]["cited_by"]] == ["41"]                                    # การอ้างในเนื้อความไม่ถูกตัดเป็นมาตราใหม่
 
 
 def test_tools_and_policy():

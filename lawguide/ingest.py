@@ -125,12 +125,46 @@ def check_versions(sections: list, footnotes: dict, appendix_text: str, amendmen
     return flags, corpus_warn
 
 
+CROSS_REF = re.compile(rf"มาตรา\s*({SEC_NO})")
+
+
+def cross_references(sections: list) -> tuple[dict, dict]:
+    """กราฟการอ้างอิงระหว่างมาตรา สกัดจากเนื้อความตัวบทเอง (ไม่ได้เขียนมือ)
+
+    cites[x]    = มาตราที่มาตรา x อ้างถึง
+    cited_by[x] = มาตราที่อ้างถึงมาตรา x เช่น 41/1 ถูกอ้างโดย 59/2 (ค่าจ้างระหว่างลา)
+    ใช้กันไม่ให้ agent สรุปว่า "ไม่มีสิทธิ" ทั้งที่สิทธินั้นอยู่ในอีกมาตราที่อ้างกลับมา
+    ข้อจำกัด: ถ้าเนื้อความอ้างมาตราของกฎหมายฉบับอื่น จะถูกนับว่าเป็นมาตราของฉบับนี้ด้วย
+    """
+    nos = {s["section_no"] for s in sections}
+    cites, cited_by = {}, {}
+    for s in sections:
+        body = SECTION_HEAD.sub("", s["text"], count=1)          # ตัดหัว "มาตรา x" ของตัวเอง
+        refs = []
+        for m in CROSS_REF.findall(body):
+            t = to_arabic(m)
+            if t in nos and t != s["section_no"] and t not in refs:
+                refs.append(t)
+        cites[s["section_no"]] = refs
+        for t in refs:
+            cited_by.setdefault(t, []).append(s["section_no"])
+    return cites, cited_by
+
+
+def _preview(text: str, n: int = 160) -> str:
+    t = re.sub(r"\[[0-9]+\]", "", SECTION_HEAD.sub("", text, count=1))
+    t = re.sub(r"\s+", " ", t).strip()
+    return t if len(t) <= n else t[:n] + "…"
+
+
 def build_docs(raw_text: str, retrieved: str, today: date | None = None) -> tuple[list, dict]:
     today = today or date.today()
     parsed = parse_law_text(raw_text)
     amend = json.loads((config.DATA_DIR / "amendments.json").read_text(encoding="utf-8"))["amendments"]
     flags, corpus_warn = check_versions(parsed["sections"], parsed["footnotes"], parsed["appendix_text"],
                                         amend, today)
+    cites, cited_by = cross_references(parsed["sections"])
+    text_of = {x["section_no"]: x["text"] for x in parsed["sections"]}
     docs = []
     for s in parsed["sections"]:
         notes = [parsed["footnotes"][r] for r in s["footnote_refs"] if r in parsed["footnotes"]]
@@ -143,6 +177,9 @@ def build_docs(raw_text: str, retrieved: str, today: date | None = None) -> tupl
             "text": s["text"],
             "amendment_notes": notes,
             "version_flags": flags.get(s["section_no"], []),
+            "cites": cites.get(s["section_no"], []),
+            "cited_by": [{"section_no": x, "preview": _preview(text_of[x])}
+                         for x in cited_by.get(s["section_no"], [])],
             "source_url": config.SOURCE_URL,
             "official_url": config.OFFICIAL_URL,
             "source_retrieved": retrieved,
@@ -150,6 +187,7 @@ def build_docs(raw_text: str, retrieved: str, today: date | None = None) -> tupl
         })
     report = {"law": config.LAW_NAME, "source_url": config.SOURCE_URL, "source_retrieved": retrieved,
               "checked_on": today.isoformat(), "n_sections": len(docs), "n_footnotes": len(parsed["footnotes"]),
+              "n_cross_refs": sum(len(v) for v in cites.values()),
               "parse_warnings": parsed["warnings"], "corpus_version_warnings": corpus_warn,
               "flagged_sections": {k: [f["status"] for f in v] for k, v in flags.items()}}
     return docs, report

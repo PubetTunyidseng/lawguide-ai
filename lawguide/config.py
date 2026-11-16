@@ -47,6 +47,7 @@ LLM_EXTRA = _json.loads(env("LLM_EXTRA_JSON", "{}") or "{}")
 MAX_STEPS = int(env("MAX_STEPS", "8"))                   # จำนวนรอบ tool call สูงสุดต่อคำถาม
 MAX_POLICY_RETRIES = int(env("MAX_POLICY_RETRIES", "2")) # ให้โมเดลแก้คำตอบเมื่ออ้างมาตราที่ตรวจไม่ผ่าน
 TOOL_RESULT_MAX_CHARS = int(env("TOOL_RESULT_MAX_CHARS", "6000"))
+RELATED_MAX = int(env("RELATED_MAX", "6"))               # จำนวนมาตราที่ "อ้างถึงมาตรานี้" ที่แนบไปกับผล tool
 
 # ---------- Retrieval / External store ----------
 BACKEND = env("BACKEND", "opensearch")                  # opensearch | local
