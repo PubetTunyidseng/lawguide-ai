@@ -22,6 +22,8 @@ def chat(messages, tools=None, model=None, temperature=None, base_url=None, retr
               temperature=config.TEMPERATURE if temperature is None else temperature)
     if tools:
         kw.update(tools=tools, tool_choice="auto")
+    if config.LLM_EXTRA:                     # พารามิเตอร์เฉพาะ provider เช่น provider routing, frequency_penalty
+        kw["extra_body"] = config.LLM_EXTRA
     err = None
     for i in range(retries + 1):
         try:

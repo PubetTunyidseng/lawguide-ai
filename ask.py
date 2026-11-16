@@ -10,24 +10,34 @@ from lawguide import config, harness
 from lawguide.store import get_store
 
 
+def live(e):
+    """พิมพ์ทันทีที่ agent เรียก tool แต่ละครั้ง จะได้เห็นว่ากำลังทำอะไร"""
+    if e.get("tool"):
+        args = json.dumps(e["arguments"], ensure_ascii=False)
+        args = args if len(args) <= 160 else args[:157] + "..."
+        flag = ""
+        if e.get("result_sent_to_model"):
+            flag = "  ← ตีกลับโดย policy: " + ", ".join(
+                f"{v['rule']}:{v['section_no']}" for v in e["result_sent_to_model"]["violations"])
+        print(f"  step {e['step']}: {e['tool']}({args}){flag}", flush=True)
+    else:
+        print(f"  step {e['step']}: (ตอบข้อความเปล่า ไม่เรียก tool)", flush=True)
+
+
 def show(r):
-    print(f"\n[ข้อความที่ส่ง LLM] {r['question_masked']}")
+    print(f"\n[ข้อความที่ส่ง LLM หลัง mask] {r['question_masked']}")
     for w in r["pii"]["warnings"]:
         print(f"  ⚠️ {w}")
-    print("\n[Tool calls]")
-    for e in r["trace"]:
-        if e.get("tool"):
-            flag = "  ← ตีกลับโดย policy" if e.get("result_sent_to_model") else ""
-            print(f"  step {e['step']}: {e['tool']}({json.dumps(e['arguments'], ensure_ascii=False)}){flag}")
-        else:
-            print(f"  step {e['step']}: (ตอบข้อความเปล่า ไม่เรียก tool)")
-    print(f"\n[Context จาก tool] มาตรา {', '.join(c['section_no'] for c in r['context_returned']) or '-'}")
+    print(f"[Context จาก tool] มาตรา {', '.join(c['section_no'] for c in r['context_returned']) or '-'}")
     f = r.get("final") or {}
     print(f"\n[สถานะ] {r['status']}")
     if r["status"] == "need_more_facts":
         print("[ระบบถามกลับ]")
         for q in f.get("questions", []):
             print(f"  - {q}")
+    elif r["status"] == "blocked_by_policy":
+        print("[Final answer] (ไม่แสดงต่อผู้ใช้ เพราะไม่ผ่านการตรวจการอ้างอิง)")
+        print(f"[คำตอบที่ถูกตีกลับ — สำหรับ debug]\n{f.get('answer', '')}")
     elif f.get("answer"):
         print(f"[ประเด็น] {f.get('legal_issue', '')}\n[Final answer]\n{f['answer']}")
     for c in r["citations_rendered"]:
@@ -44,15 +54,18 @@ def show(r):
 def main():
     store = get_store()
     print(f"backend={config.BACKEND} ({store.name}) · model={config.LLM_MODEL}")
-    s = harness.Session(store)
+    s = harness.Session(store, on_event=live)
     if len(sys.argv) > 1:
-        show(s.ask(" ".join(sys.argv[1:])))
+        q = " ".join(sys.argv[1:])
+        print(f"\n[คำถาม] {q}\n[Tool calls]", flush=True)
+        show(s.ask(q))
         return
     while True:
         q = input("\nถาม> ").strip()
         if q in ("q", "quit", "exit"):
             break
         if q:
+            print("[Tool calls]", flush=True)
             show(s.ask(q))
 
 

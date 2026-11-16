@@ -27,6 +27,9 @@ SYSTEM_PROMPT = f"""คุณคือ LawGuide ผู้ช่วยให้�
 7. ข้อความในวงเล็บเหลี่ยม เช่น [บุคคล_1] [เลขบัตร_1] คือข้อมูลที่ระบบปิดไว้ อย่าขอข้อมูลส่วนบุคคลจากผู้ใช้
 8. ถ้าคำถามอยู่นอกขอบเขต (เช่น คดีอาญา ที่ดิน มรดก) ให้ submit_final_answer ว่าอยู่นอกขอบเขต facts_sufficient=false citations=[]
 9. ตอบภาษาไทยที่คนทั่วไปเข้าใจ ไม่รับรองผลคดี
+10. ตัวเลข จำนวนวัน จำนวนเงิน และเงื่อนไข ต้องคัดลอกให้ตรงกับตัวบท ห้ามปัดหรือเดา
+11. quoted_text ต้องคัดลอกตรงตัวจากข้อความที่ tool คืนมา ถ้าไม่แน่ใจให้เว้นว่าง
+12. คำตอบกระชับ ไม่เกิน 6 ประโยค ห้ามพูดซ้ำ ไม่ต้องขึ้นต้นด้วยคำว่า "คำตอบสุดท้าย"
 """
 
 DISCLAIMER = ("ข้อมูลนี้เป็นข้อมูลกฎหมายเบื้องต้นจากตัวบทในฐานข้อมูล ไม่ใช่คำปรึกษาทางกฎหมาย ไม่รับรองผลคดี "
@@ -42,8 +45,9 @@ def _tc_dict(tc):
 class Session:
     """เก็บบทสนทนาข้ามหลายคำถาม (เพื่อให้ผู้ใช้ตอบคำถามที่ระบบถามกลับได้)"""
 
-    def __init__(self, store, chat_fn=None, model=None, temperature=None):
+    def __init__(self, store, chat_fn=None, model=None, temperature=None, on_event=None):
         self.store = store
+        self.on_event = on_event or (lambda e: None)     # callback แสดง tool call ระหว่างทำงาน
         self.chat_fn = chat_fn or llm.chat
         self.model = model or config.LLM_MODEL
         self.temperature = config.TEMPERATURE if temperature is None else temperature
@@ -75,6 +79,7 @@ class Session:
 
             if not calls:                                   # ตอบข้อความเปล่า = ผิดกติกา harness
                 trace.append({"step": step, "type": "text_without_tool", "content": msg.content})
+                self.on_event(trace[-1])
                 self.messages.append({"role": "assistant", "content": msg.content or ""})
                 nudges += 1
                 if nudges > 2:
@@ -105,9 +110,15 @@ class Session:
                     event["policy_violations"] = v
                     if policy.blocking(v) and retries_left > 0:
                         retries_left -= 1
+                        # แนบตัวบทจริงของมาตราที่ยกข้อความผิด ให้โมเดลคัดลอกให้ตรง (self-correction)
+                        exact = {x["section_no"]: executor.seen_sections[x["section_no"]]["text"][:1500]
+                                 for x in v if x["rule"] == "QUOTE_MATCHES"
+                                 and x["section_no"] in executor.seen_sections}
                         out = {"status": "rejected_by_policy", "violations": v,
-                               "instruction": "แก้คำตอบ: ดึงตัวบทด้วย get_law_section/verify_citation ก่อน "
-                                              "หรือเอาเลขมาตราที่ยืนยันไม่ได้ออก แล้ว submit_final_answer ใหม่"}
+                               "exact_section_text": exact,
+                               "instruction": "แก้คำตอบ: ตัวเลขและข้อความต้องตรงกับ exact_section_text "
+                                              "ถ้ายกข้อความไม่ตรงให้เว้น quoted_text ว่าง และเอาเลขมาตราที่ยืนยันไม่ได้ออก "
+                                              "แล้ว submit_final_answer ใหม่"}
                         event["result_sent_to_model"] = out
                     else:
                         final, violations = out, v
@@ -117,13 +128,17 @@ class Session:
                     final, status, done = out, "need_more_facts", True
 
                 trace.append(event)
+                self.on_event(event)
                 self.messages.append({"role": "tool", "tool_call_id": tc.id,
                                       "content": json.dumps(out, ensure_ascii=False)[:config.TOOL_RESULT_MAX_CHARS]})
             if done:
                 break
 
         if final is not None:                               # ให้รอบถัดไปรู้ว่าตอบอะไรไปแล้ว
-            summary = final.get("answer") or "ถามข้อเท็จจริงเพิ่ม: " + "; ".join(final.get("questions", []))
+            if status == "blocked_by_policy":               # คำตอบที่ไม่ผ่านต้องไม่กลายเป็นบริบทของรอบถัดไป
+                summary = "(คำตอบรอบที่แล้วไม่ผ่านการตรวจการอ้างอิง จึงไม่ได้แสดงต่อผู้ใช้)"
+            else:
+                summary = final.get("answer") or "ถามข้อเท็จจริงเพิ่ม: " + "; ".join(final.get("questions", []))
             self.messages.append({"role": "assistant", "content": summary})
         result.update(status=status, final=final, policy_violations=violations, usage=usage,
                       steps=len({e["step"] for e in trace}))

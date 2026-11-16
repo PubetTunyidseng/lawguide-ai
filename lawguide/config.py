@@ -39,6 +39,9 @@ LLM_MODEL = env("LLM_MODEL", "qwen/qwen-2.5-72b-instruct")
 JUDGE_MODEL = env("JUDGE_MODEL", LLM_MODEL)          # ใช้ตอน eval faithfulness
 TEMPERATURE = float(env("TEMPERATURE", "0.2"))
 LLM_TIMEOUT_S = float(env("LLM_TIMEOUT_S", "120"))
+# JSON ที่ส่งต่อให้ API ตรง ๆ เช่น {"provider": {"sort": "throughput"}, "frequency_penalty": 0.3}
+import json as _json
+LLM_EXTRA = _json.loads(env("LLM_EXTRA_JSON", "{}") or "{}")
 
 # ---------- Harness ----------
 MAX_STEPS = int(env("MAX_STEPS", "8"))                   # จำนวนรอบ tool call สูงสุดต่อคำถาม
