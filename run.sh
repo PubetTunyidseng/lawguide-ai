@@ -46,22 +46,40 @@ has_key || { echo "  ✗ ยังไม่มี LLM_API_KEY — เปิด�
 
 # ---------- 3. External store ----------
 say "3/6 External store"
-if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-  docker compose up -d
+PORT=${OPENSEARCH_PORT:-9200}
+is_opensearch() { curl -s -m 3 "localhost:$1" 2>/dev/null | grep -q '"distribution" *: *"opensearch"'; }
+port_busy() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1 || nc -z localhost "$1" >/dev/null 2>&1; }
+
+if is_opensearch "$PORT"; then
+  # มี OpenSearch รันอยู่แล้ว (เช่นของโปรเจกต์ kdai-rag-assignment) ใช้ตัวเดิมได้ เพราะเราใช้ index แยกชื่อ lawguide-lpa
+  echo "  ✓ พบ OpenSearch ที่ localhost:$PORT อยู่แล้ว → ใช้ตัวเดิม (index: lawguide-lpa แยกจากของเดิม)"
+  export BACKEND=opensearch OPENSEARCH_PORT=$PORT
+elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  if port_busy "$PORT"; then
+    echo "  ⚠️ พอร์ต $PORT ถูกใช้โดยโปรแกรมอื่นที่ไม่ใช่ OpenSearch แบบไม่มีรหัสผ่าน"
+    for p in 9201 9202 9203 9210; do port_busy "$p" || { PORT=$p; break; }; done
+    echo "     → เปิด OpenSearch ของ LawGuide ที่พอร์ต $PORT แทน"
+  fi
+  OPENSEARCH_PORT=$PORT docker compose up -d
   printf "  รอ OpenSearch"
-  for _ in $(seq 1 60); do
-    curl -s localhost:9200 >/dev/null 2>&1 && break
+  for _ in $(seq 1 90); do
+    is_opensearch "$PORT" && break
     printf "."; sleep 2
   done
   echo
-  curl -s localhost:9200 >/dev/null || { echo "  ✗ OpenSearch ไม่ตอบที่ localhost:9200"; exit 1; }
-  export BACKEND=opensearch
-  echo "  ✓ OpenSearch พร้อม (BACKEND=opensearch)"
+  is_opensearch "$PORT" || { echo "  ✗ OpenSearch ไม่ตอบที่ localhost:$PORT — ดู log: docker compose logs opensearch"; exit 1; }
+  export BACKEND=opensearch OPENSEARCH_PORT=$PORT
+  echo "  ✓ OpenSearch พร้อมที่ localhost:$PORT (BACKEND=opensearch)"
 else
   export BACKEND=local
   echo "  ⚠️ ไม่พบ Docker ที่เปิดอยู่ → ใช้ BACKEND=local (BM25 ในหน่วยความจำ)"
   echo "     ตอนสอบต้องเปิด Docker Desktop แล้วรันใหม่ เพื่อให้มี External ตามเกณฑ์"
 fi
+
+# จำค่าที่เลือกไว้ใน .env เพื่อให้ python app.py / ask.py ที่รันเองภายหลังใช้ค่าเดียวกัน
+set_env() { grep -v "^$1=" .env > .env.tmp; printf '%s=%s\n' "$1" "$2" >> .env.tmp; mv .env.tmp .env; }
+set_env BACKEND "$BACKEND"
+[ "$BACKEND" = opensearch ] && set_env OPENSEARCH_PORT "$OPENSEARCH_PORT"
 
 # ---------- 4. Ingest ----------
 say "4/6 Ingest ตัวบท"
