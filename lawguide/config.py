@@ -44,7 +44,9 @@ import json as _json
 LLM_EXTRA = _json.loads(env("LLM_EXTRA_JSON", "{}") or "{}")
 
 # ---------- Harness ----------
-MAX_STEPS = int(env("MAX_STEPS", "8"))                   # จำนวนรอบ tool call สูงสุดต่อคำถาม
+MAX_STEPS = int(env("MAX_STEPS", "8"))
+TOOL_CHOICE = env("TOOL_CHOICE", "required")             # required = บังคับเรียก tool ทุกรอบ | auto
+BUDGET_WARN_AT = int(env("BUDGET_WARN_AT", "2"))         # เหลือกี่รอบแล้วเตือนให้ส่งคำตอบ                   # จำนวนรอบ tool call สูงสุดต่อคำถาม
 MAX_POLICY_RETRIES = int(env("MAX_POLICY_RETRIES", "2")) # ให้โมเดลแก้คำตอบเมื่ออ้างมาตราที่ตรวจไม่ผ่าน
 TOOL_RESULT_MAX_CHARS = int(env("TOOL_RESULT_MAX_CHARS", "6000"))
 RELATED_MAX = int(env("RELATED_MAX", "6"))               # จำนวนมาตราที่ "อ้างถึงมาตรานี้" ที่แนบไปกับผล tool

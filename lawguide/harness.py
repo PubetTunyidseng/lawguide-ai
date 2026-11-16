@@ -26,6 +26,7 @@ SYSTEM_PROMPT = f"""คุณคือ LawGuide ผู้ช่วยให้�
 6. ถ้า tool แจ้งว่ามาตราอาจไม่ใช่ฉบับปัจจุบัน ต้องบอกผู้ใช้ในคำตอบ
 7. ข้อความในวงเล็บเหลี่ยม เช่น [บุคคล_1] [เลขบัตร_1] คือข้อมูลที่ระบบปิดไว้ อย่าขอข้อมูลส่วนบุคคลจากผู้ใช้
 8. ถ้าคำถามอยู่นอกขอบเขต (เช่น คดีอาญา ที่ดิน มรดก) ให้ submit_final_answer ว่าอยู่นอกขอบเขต facts_sufficient=false citations=[]
+   ถ้าค้นแล้วไม่พบเรื่องนี้ในตัวบท ให้ submit_final_answer ว่าไม่พบในกฎหมายฉบับนี้ facts_sufficient=false citations=[] ไม่ต้องค้นวนต่อ
 9. ตอบภาษาไทยที่คนทั่วไปเข้าใจ ไม่รับรองผลคดี
 10. ตัวเลข จำนวนวัน จำนวนเงิน และเงื่อนไข ต้องคัดลอกให้ตรงกับตัวบท ห้ามปัดหรือเดา
 11. quoted_text ต้องคัดลอกตรงตัวจากข้อความที่ tool คืนมา ถ้าไม่แน่ใจให้เว้นว่าง
@@ -91,7 +92,10 @@ class Session:
                              "facts_to_verify": ["ระบบไม่ได้ส่งคำตอบผ่านขั้นตอนตรวจสอบ"], "legal_issue": ""}
                     violations = policy.check_final(final, executor)
                     break
+                wrote_call = any(t in (msg.content or "") for t in ("submit_final_answer(", "request_more_facts("))
                 self.messages.append({"role": "user", "content":
+                                      "(ระบบ) คุณพิมพ์ชื่อ tool เป็นข้อความ ระบบจึงไม่ได้รับคำตอบ ให้เรียกเป็น tool call จริง"
+                                      if wrote_call else
                                       "(ระบบ) กรุณาใช้ tool ค้นตัวบท แล้วจบด้วย submit_final_answer หรือ request_more_facts"})
                 continue
 
@@ -136,6 +140,11 @@ class Session:
                                       "content": json.dumps(out, ensure_ascii=False)[:config.TOOL_RESULT_MAX_CHARS]})
             if done:
                 break
+            left = config.MAX_STEPS - step
+            if 0 < left <= config.BUDGET_WARN_AT:          # กันค้นวนจนหมดรอบโดยไม่ส่งคำตอบ
+                self.messages.append({"role": "user", "content":
+                                      f"(ระบบ) เหลืออีก {left} รอบ ให้ส่ง submit_final_answer หรือ request_more_facts "
+                                      "จากข้อมูลที่มีตอนนี้ ถ้าไม่พบในตัวบทให้ตอบว่าไม่พบ"})
 
         if final is not None:                               # ให้รอบถัดไปรู้ว่าตอบอะไรไปแล้ว
             if status == "blocked_by_policy":               # คำตอบที่ไม่ผ่านต้องไม่กลายเป็นบริบทของรอบถัดไป

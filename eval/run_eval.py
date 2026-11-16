@@ -26,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from lawguide import config, harness, llm  # noqa: E402
+from lawguide.policy import negated_mention  # noqa: E402
 from lawguide.store import get_store, norm_section_no  # noqa: E402
 
 JUDGE_PROMPT = """คุณเป็นผู้ตรวจ faithfulness ให้ตัดสินแต่ละประโยคใน "คำตอบ" ว่ามีข้อความใน "context" รองรับหรือไม่
@@ -60,7 +61,8 @@ def hallucination_attempts(r: dict, valid: set) -> list:
         if e.get("tool") == "submit_final_answer":
             a = e["arguments"]
             nos = [norm_section_no(c.get("section_no", "")) for c in a.get("citations", [])]
-            nos += [norm_section_no(m) for m in re.findall(r"มาตรา\s*([0-9๐-๙]+(?:/[0-9๐-๙]+)?)", a.get("answer", ""))]
+            nos += [norm_section_no(m) for m in re.findall(r"มาตรา\s*([0-9๐-๙]+(?:/[0-9๐-๙]+)?)", a.get("answer", ""))
+                    if not negated_mention(a.get("answer", ""), norm_section_no(m))]   # "ไม่มีมาตรา 999" ไม่นับ
             bad += [n for n in nos if n not in valid]
     return sorted(set(bad))
 
@@ -128,7 +130,8 @@ def main():
                    "behavior_ok": behavior_ok(t["expected_behavior"], beh),
                    "cited": sorted(cited), "gold": sorted(gold),
                    "recall": round(len(cited & gold) / len(gold), 3) if score_cites else None,
-                   "precision": round(len(cited & gold) / len(cited), 3) if score_cites and cited else None,
+                   "precision": round(len(cited & (gold | set(t.get("ok_sections", [])))) / len(cited), 3)
+                                if score_cites and cited else None,
                    "key_facts": kf, "key_facts_missing": kf_missing,
                    "question_coverage": qc, "questions_missing": q_missing,
                    "cited_in_context": sorted(c for c in cited if c in {x["section_no"] for x in r["context_returned"]}),

@@ -21,7 +21,7 @@ def chat(messages, tools=None, model=None, temperature=None, base_url=None, retr
     kw = dict(model=model or config.LLM_MODEL, messages=messages,
               temperature=config.TEMPERATURE if temperature is None else temperature)
     if tools:
-        kw.update(tools=tools, tool_choice="auto")
+        kw.update(tools=tools, tool_choice=config.TOOL_CHOICE)
     if config.LLM_EXTRA:                     # พารามิเตอร์เฉพาะ provider เช่น provider routing, frequency_penalty
         kw["extra_body"] = config.LLM_EXTRA
     err = None
@@ -30,6 +30,10 @@ def chat(messages, tools=None, model=None, temperature=None, base_url=None, retr
             return client(base_url).chat.completions.create(**kw)
         except Exception as e:          # network / rate limit
             err = e
+            # บาง provider ไม่รองรับ tool_choice="required" → ถอยไปใช้ auto (harness ยังบังคับด้วยการเตือนเอง)
+            if kw.get("tool_choice") == "required" and "tool_choice" in str(e):
+                kw["tool_choice"] = "auto"
+                continue
             time.sleep(2 * (i + 1))
     raise err
 

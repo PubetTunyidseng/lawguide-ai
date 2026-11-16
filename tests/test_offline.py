@@ -57,6 +57,28 @@ def test_tools_and_policy():
     assert {"CITE_EXISTS", "ANSWER_MENTIONS_GROUNDED"} <= rules
 
 
+def test_quote_ellipsis_and_negation():
+    from lawguide.tools import quote_in_text
+    text = "มาตรา ๗๖ ห้ามมิให้นายจ้างหักค่าจ้าง เว้นแต่เป็นการหักเพื่อ (๑) ชำระภาษี (๔) ชดใช้ค่าเสียหาย โดยได้รับความยินยอม"
+    assert quote_in_text("ห้ามมิให้นายจ้างหักค่าจ้าง ... (๔) ชดใช้ค่าเสียหาย", text)
+    assert quote_in_text("ห้ามมิให้นายจ้างหักค่าจ้าง… โดยได้รับความยินยอม", text)
+    assert not quote_in_text("(๔) ชดใช้ค่าเสียหาย ... ห้ามมิให้นายจ้างหักค่าจ้าง", text)    # สลับลำดับไม่ได้
+    assert not quote_in_text("ห้ามมิให้นายจ้างหักค่าจ้าง ... หักได้ทุกกรณี", text)          # แต่งเติมไม่ได้
+    assert policy.negated_mention("ไม่มีมาตรา 999 ในกฎหมายฉบับนี้", "999")
+    assert policy.negated_mention("มาตรา ๙๙๙ ไม่มีอยู่จริง", "999")
+    assert not policy.negated_mention("ตามมาตรา 999 ได้โบนัส 2 เดือน", "999")
+
+    store, _, _ = make_store()
+    ex = ToolExecutor(store)
+    ex.run("verify_citation", {"section_no": "999"})
+    ok = {"answer": "ไม่มีมาตรา 999 ในพระราชบัญญัตินี้", "citations": [], "facts_sufficient": False,
+          "facts_to_verify": []}
+    assert policy.check_final(ok, ex) == []
+    bad = {"answer": "ตามมาตรา 999 ได้โบนัส 2 เดือน", "citations": [], "facts_sufficient": False,
+           "facts_to_verify": []}
+    assert [v["rule"] for v in policy.check_final(bad, ex)] == ["ANSWER_MENTIONS_GROUNDED"]
+
+
 def test_pii():
     g = pii.guard("ผม นายสมมติ ทดสอบดี เลขบัตร 1-2345-67890-12-1 โทร 081-234-5678 นายจ้างไม่จ่ายค่าจ้าง",
                   use_llm=False)
@@ -101,6 +123,25 @@ def test_agent_loop_self_correction():
     assert r["status_panel"]["ผลตรวจการอ้างอิง"] == "ผ่าน"
     assert "ทดลอง" not in r["question_masked"]
     print(json.dumps(r["status_panel"], ensure_ascii=False, indent=1))
+
+
+def test_text_tool_call_nudge_and_budget():
+    store, _, _ = make_store()
+    seen = []
+    script = iter([
+        _resp(None, content='submit_final_answer(legal_issue="x", answer="...")'),
+        _resp([_call(1, "search_law_sections", {"query": "ลาคลอด"})]),
+        _resp([_call(2, "verify_citation", {"section_no": "41"})]),
+        _resp([_call(3, "submit_final_answer", {"legal_issue": "ลาคลอด", "answer": "ดูมาตรา 41",
+               "citations": [{"section_no": "41"}], "facts_sufficient": True, "facts_to_verify": []})]),
+    ])
+
+    def fake(messages, **k):
+        seen.append(messages[-1]["content"] if messages[-1]["role"] == "user" else "")
+        return next(script)
+    r = harness.Session(store, chat_fn=fake).ask("ลาคลอดได้กี่วัน")
+    assert r["status"] == "answered"
+    assert any("เป็นข้อความ" in x for x in seen)          # เตือนว่าพิมพ์ tool เป็นข้อความ
 
 
 def test_agent_gives_up_when_hallucinating():

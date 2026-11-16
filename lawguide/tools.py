@@ -75,6 +75,26 @@ TOOL_SCHEMAS = [
 ]
 
 
+ELLIPSIS = re.compile(r"\.{3,}|…")
+
+
+def quote_in_text(quote: str, text: str) -> bool:
+    """ข้อความที่ยกมาต้องมีอยู่จริงในตัวบท รองรับการละข้อความด้วย ... หรือ …
+    แต่ละท่อนต้องมีอยู่จริงและเรียงตามลำดับเดิม (ไม่ยอมให้สลับหรือแต่งเติม)"""
+    hay = _norm_text(text)
+    pos = 0
+    parts = [_norm_text(x) for x in ELLIPSIS.split(quote)]
+    parts = [x for x in parts if x]
+    if not parts:
+        return False
+    for part in parts:
+        i = hay.find(part, pos)
+        if i < 0:
+            return False
+        pos = i + len(part)
+    return True
+
+
 def _norm_text(s: str) -> str:
     s = s.translate(str.maketrans("๐๑๒๓๔๕๖๗๘๙", "0123456789"))
     s = re.sub(r"\[[0-9]+\]", "", s)             # ตัดเลขเชิงอรรถ
@@ -144,7 +164,7 @@ class ToolExecutor:
             res["version_flags"] = [f["message"] for f in d.get("version_flags", [])]
             res["cited_by"] = _related(d)
             if quoted_text:
-                res["quote_found"] = _norm_text(quoted_text) in _norm_text(d["text"])
+                res["quote_found"] = quote_in_text(quoted_text, d["text"])
                 if not res["quote_found"]:
                     res["note"] = "ข้อความที่ยกมาไม่ตรงกับตัวบท ให้ยกข้อความจากตัวบทจริงหรือสรุปโดยไม่ใส่เครื่องหมายคำพูด"
         else:
