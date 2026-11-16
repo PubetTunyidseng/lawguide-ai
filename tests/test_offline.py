@@ -20,8 +20,13 @@ from lawguide.tools import ToolExecutor  # noqa: E402
 FIXTURE = (Path(__file__).parent / "fixture_law_format.txt").read_text(encoding="utf-8")
 
 
+NO9 = [{"name": "พระราชบัญญัติคุ้มครองแรงงาน (ฉบับที่ 9) พ.ศ. 2568", "ordinal": 9, "marker": r"\(ฉบับที่\s*9\)",
+        "gazette_published": "2025-11-07", "effective": "2025-12-07",
+        "sections_changed": ["4/1", "41", "41/1", "59"], "sections_new": ["4/1", "41/1"]}]
+
+
 def make_store():
-    docs, report = build_docs(FIXTURE, retrieved="2026-11-15", today=date(2026, 11, 15))
+    docs, report = build_docs(FIXTURE, retrieved="2026-11-15", today=date(2026, 11, 15), amendments=NO9)
     return LocalStore(docs), docs, report
 
 

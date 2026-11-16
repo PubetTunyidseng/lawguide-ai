@@ -69,8 +69,9 @@ RRF_K = int(env("RRF_K", "60"))
 # ---------- กฎหมายที่ใช้ (MVP = ด้านเดียว) ----------
 LAW_ID = env("LAW_ID", "lpa2541")
 LAW_NAME = env("LAW_NAME", "พระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541")
-# ตัวบทฉบับรวมแก้ไขถึงฉบับที่ 9 (จัดทำจากตัวบทกฤษฎีกา) — แหล่งทางการคือ krisdika.go.th + ราชกิจจานุเบกษา
-SOURCE_URL = env("SOURCE_URL", "https://www.drthawip.com/book/export/html/3172")
+# แหล่งหลัก = ฉบับรวมของสำนักงานคณะกรรมการกฤษฎีกา (PDF ใน data/sources/) ตรวจซ้ำกับราชกิจจาฯ และ mirror
+SOURCE_URL = env("SOURCE_URL", "https://www.krisdika.go.th/librarian/get?sysid=642571&ext=htm")
+SOURCE_LABEL = env("SOURCE_LABEL", "สำนักงานคณะกรรมการกฤษฎีกา ฉบับรวม (ตรวจ 9 ธ.ค. 2568)")
 OFFICIAL_URL = env("OFFICIAL_URL", "https://www.krisdika.go.th/librarian/get?sysid=642571&ext=htm")
 SOURCE_FILE = env("SOURCE_FILE", str(RAW_DIR / "lpa2541.txt"))
 if not Path(SOURCE_FILE).is_absolute():

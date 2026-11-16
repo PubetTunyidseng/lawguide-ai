@@ -84,45 +84,61 @@ def parse_law_text(raw: str) -> dict:
 
 def check_versions(sections: list, footnotes: dict, appendix_text: str, amendments: list,
                    today: date) -> tuple[dict, list]:
-    """ตรวจว่าตัวบทมีร่องรอยฉบับแก้ไขล่าสุดหรือยัง
+    """ตรวจว่าตัวบทมีร่องรอยฉบับแก้ไขครบทุกฉบับในทะเบียนหรือไม่
 
     คืน (flags_by_section, corpus_warnings)
-    หลักการ: ฉบับแก้ไขที่ทะเบียนบอกว่าแก้มาตรา X ต้องมีเชิงอรรถของมาตรา X ที่อ้างถึง "(ฉบับที่ N)"
-    ถ้าไม่มี = ตัวบทในฐานข้อมูลอาจเป็นฉบับเก่า → ติดธงไว้ทั้งที่มาตราและระดับคลัง
+    หลักการ: ทะเบียน (data/amendments.json) บอกว่าฉบับแก้ไข A แก้มาตรา X
+             ข้อความของมาตรา X ในตัวบทที่นำเข้า (เชิงอรรถ + เนื้อความ) ต้องมีร่องรอยของ A (marker เช่น "(ฉบับที่ 9)")
+             ถ้าไม่มี = มาตรานั้นอาจยังเป็นข้อความก่อนแก้ → ติดธงที่มาตรา และเตือนระดับคลังถ้าไม่พบ A เลยทั้งเล่ม
+    ตัวอย่างจริง: ตัวบทจาก mirror ไม่มีร่องรอย พ.ร.บ.ปรับเป็นพินัย 2565 → มาตรา 144/1, 145, … ถูกติดธงทั้งหมด
     """
     by_no = {s["section_no"]: s for s in sections}
     flags, corpus_warn = {}, []
-    full_notes = " ".join(footnotes.values()) + " " + appendix_text
+    everything = to_arabic(" ".join(footnotes.values()) + " " + appendix_text + " " +
+                           " ".join(s["text"] for s in sections))
     for a in amendments:
-        ordinal = str(a["ordinal"])
-        marker = re.compile(rf"\(ฉบับที่\s*{ordinal}\)")
-        eff = date.fromisoformat(a["effective"])
-        not_yet = eff > today
-        corpus_has_act = bool(marker.search(to_arabic(full_notes)))
-        if not corpus_has_act:
-            corpus_warn.append(f"ไม่พบร่องรอย {a['name']} (มีผล {a['effective']}) ในตัวบทที่นำเข้า — "
+        marker = re.compile(a.get("marker") or rf"\(ฉบับที่\s*{a['ordinal']}\)")
+        eff = a.get("effective")
+        not_yet = bool(eff) and date.fromisoformat(eff) > today
+        src = [x for x in [a.get("gazette_ref")] + a.get("sources", []) if x]
+        if not marker.search(everything):
+            corpus_warn.append(f"ไม่พบร่องรอย {a['name']} (มีผล {eff}) ในตัวบทที่นำเข้า — "
                                f"ตัวบทอาจเป็นฉบับก่อนแก้ไข ต้องตรวจกับราชกิจจานุเบกษา")
-        for no in a["sections_new"]:
+        for no in a.get("sections_new", []):
             if no not in by_no:
                 corpus_warn.append(f"ไม่พบมาตรา {no} ที่ {a['name']} เพิ่มเข้ามา")
-        for no in a["sections_changed"]:
+        for no in a.get("sections_changed", []):
             s = by_no.get(no)
             if s is None:
                 continue
-            notes = " ".join(footnotes.get(r, "") for r in s["footnote_refs"])
+            notes = " ".join(footnotes.get(r, "") for r in s["footnote_refs"]) + " " + s["text"]
             if marker.search(to_arabic(notes)):
-                status = "updated"
-                msg = f"แก้ไขโดย {a['name']} แล้ว"
+                status, msg = "updated", f"แก้ไขโดย {a['name']} แล้ว"
             else:
                 status = "possibly_outdated"
-                msg = (f"มาตรานี้ถูกแก้ไขโดย {a['name']} (ประกาศ {a['gazette_published']}, มีผล {a['effective']}) "
+                msg = (f"มาตรานี้ถูกแก้ไขโดย {a['name']} (ประกาศ {a.get('gazette_published')}, มีผล {eff}) "
                        f"แต่ข้อความในฐานข้อมูลไม่มีร่องรอยการแก้ไขนั้น — อาจเป็นข้อความฉบับเก่า")
             if not_yet:
                 msg += " (ฉบับแก้ไขยังไม่มีผลบังคับ ณ วันที่ตรวจ)"
             flags.setdefault(no, []).append({"status": status, "amendment": a["name"],
-                                             "effective": a["effective"], "message": msg,
-                                             "sources": a["sources"]})
+                                             "effective": eff, "message": msg, "sources": src})
     return flags, corpus_warn
+
+
+def source_discrepancies() -> dict:
+    """มาตราที่ถ้อยคำในแหล่งหลักต่างจากราชกิจจาฯ ฉบับประกาศใช้ (ตรวจด้วยตา มีหลักฐานอ้างอิง)
+    ไม่แก้ตัวบทเอง แต่แนบคำเตือนไปกับมาตรานั้น เพื่อให้ agent และผู้ใช้เห็น"""
+    p = config.DATA_DIR / "source_discrepancies.json"
+    if not p.exists():
+        return {}
+    out = {}
+    for d in json.loads(p.read_text(encoding="utf-8"))["items"]:
+        out.setdefault(d["section_no"], []).append({
+            "status": "source_discrepancy", "amendment": None, "effective": None,
+            "message": (f"ถ้อยคำในฐานข้อมูล \"{d['primary']}\" ต่างจากราชกิจจาฯ ฉบับประกาศใช้ \"{d['gazette']}\" "
+                        f"({d['gazette_ref']}) — {d['note']}"),
+            "sources": [d["gazette_ref"], d["evidence"]]})
+    return out
 
 
 CROSS_REF = re.compile(rf"มาตรา\s*({SEC_NO})")
@@ -157,12 +173,16 @@ def _preview(text: str, n: int = 160) -> str:
     return t if len(t) <= n else t[:n] + "…"
 
 
-def build_docs(raw_text: str, retrieved: str, today: date | None = None) -> tuple[list, dict]:
+def build_docs(raw_text: str, retrieved: str, today: date | None = None,
+               amendments: list | None = None) -> tuple[list, dict]:
     today = today or date.today()
     parsed = parse_law_text(raw_text)
-    amend = json.loads((config.DATA_DIR / "amendments.json").read_text(encoding="utf-8"))["amendments"]
+    amend = amendments if amendments is not None else json.loads(
+        (config.DATA_DIR / "amendments.json").read_text(encoding="utf-8"))["amendments"]
     flags, corpus_warn = check_versions(parsed["sections"], parsed["footnotes"], parsed["appendix_text"],
                                         amend, today)
+    for no, extra in source_discrepancies().items():
+        flags.setdefault(no, []).extend(extra)
     cites, cited_by = cross_references(parsed["sections"])
     text_of = {x["section_no"]: x["text"] for x in parsed["sections"]}
     docs = []
@@ -181,6 +201,7 @@ def build_docs(raw_text: str, retrieved: str, today: date | None = None) -> tupl
             "cited_by": [{"section_no": x, "preview": _preview(text_of[x])}
                          for x in cited_by.get(s["section_no"], [])],
             "source_url": config.SOURCE_URL,
+            "source_label": config.SOURCE_LABEL,
             "official_url": config.OFFICIAL_URL,
             "source_retrieved": retrieved,
             "checked_on": today.isoformat(),
