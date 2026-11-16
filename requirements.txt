@@ -1,0 +1,6 @@
+openai>=1.40
+pythainlp>=5.0
+rank_bm25
+gradio>=5.0
+opensearch-py
+pytest

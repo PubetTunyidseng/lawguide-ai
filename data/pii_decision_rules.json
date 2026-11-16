@@ -1,0 +1,23 @@
+{
+  "note": "Decision table สำหรับข้อมูลอ่อนไหวในข้อความผู้ใช้ (hit policy = FIRST: แถวแรกที่ตรงเงื่อนไขชนะ) action: mask = แทนด้วย placeholder ก่อนส่ง LLM, keep = ส่งได้ (จำเป็นต่อการตอบ), block = ไม่ประมวลผลข้อความนี้; warn = แสดงคำเตือนให้ผู้ใช้",
+  "rules": [
+    {"category": "thai_id",        "detector": "*",    "action": "mask", "warn": true,  "placeholder": "เลขบัตร",
+     "reason": "เลขบัตรประชาชนไม่จำเป็นต่อการให้ข้อมูลกฎหมาย"},
+    {"category": "bank_account",   "detector": "*",    "action": "mask", "warn": true,  "placeholder": "เลขบัญชี",
+     "reason": "ไม่จำเป็นต่อการตอบ"},
+    {"category": "phone",          "detector": "*",    "action": "mask", "warn": true,  "placeholder": "เบอร์โทร",
+     "reason": "ไม่จำเป็นต่อการตอบ"},
+    {"category": "email",          "detector": "*",    "action": "mask", "warn": true,  "placeholder": "อีเมล",
+     "reason": "ไม่จำเป็นต่อการตอบ"},
+    {"category": "person_name",    "detector": "*",    "action": "mask", "warn": true,  "placeholder": "บุคคล",
+     "reason": "ชื่อบุคคลไม่จำเป็นต่อการให้ข้อมูลกฎหมาย"},
+    {"category": "address",        "detector": "*",    "action": "mask", "warn": true,  "placeholder": "ที่อยู่",
+     "reason": "ระบุพื้นที่ระดับจังหวัดก็พอสำหรับหาหน่วยงาน"},
+    {"category": "organization",   "detector": "*",    "action": "mask", "warn": false, "placeholder": "บริษัท",
+     "reason": "ชื่อนายจ้างไม่เปลี่ยนข้อกฎหมาย"},
+    {"category": "health_info",    "detector": "*",    "action": "keep", "warn": true,  "placeholder": "",
+     "reason": "อาจจำเป็นต่อประเด็นลาป่วย/ลาคลอด — ส่งต่อได้แต่เตือนผู้ใช้"},
+    {"category": "*",              "detector": "*",    "action": "mask", "warn": true,  "placeholder": "ข้อมูลอ่อนไหว",
+     "reason": "ค่าเริ่มต้น: ไม่แน่ใจให้ปิดไว้ก่อน"}
+  ]
+}

@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+runs/
+tests/_runs/
+eval/results/
+.pytest_cache/
+.venv/
+venv/
+data/processed/
+.DS_Store
+*.zip

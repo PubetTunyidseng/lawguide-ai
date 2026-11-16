@@ -1,0 +1,3 @@
+# เพิ่ม vector search (bge-m3) ให้ OpenSearch เป็น hybrid BM25 + vector — ติดตั้งด้วย bash run.sh --vector
+sentence-transformers>=3.0
+torch
