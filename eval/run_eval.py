@@ -6,6 +6,8 @@
   faithfulness  (1) deterministic: มาตราที่อ้างอยู่ใน context ที่ tool คืนมาไหม
                 (2) --judge: ให้ LLM อีกตัวตัดสินทีละประโยคว่ามี context รองรับไหม (เก็บประโยคที่ไม่รองรับไว้ดู)
   hallucination จำนวนครั้งที่โมเดลพยายามอ้างมาตราที่ไม่มีจริง (นับจาก trace รวมรอบที่ policy ตีกลับ)
+  key facts     คำตอบมีข้อเท็จจริงหลักตามตัวบทไหม เช่น จำนวนวัน อัตรา (testset: key_facts)
+  question cov. ถามกลับครบข้อเท็จจริงที่จำเป็นไหม (testset: required_questions)
   consistency   ถามซ้ำ N รอบ: พฤติกรรมเหมือนกันไหม, ชุดมาตราที่อ้างซ้ำกันแค่ไหน (Jaccard เฉลี่ยรายคู่)
 
 รัน:
@@ -72,6 +74,15 @@ def judge(answer: str, context: list, model: str) -> list:
         return [{"sentence": "(judge parse error)", "supported": None, "raw": out[:300]}]
 
 
+def coverage(text: str, groups: list) -> tuple:
+    """groups = [[คำที่ยอมรับ...], ...] คืน (สัดส่วนที่พบ, รายการกลุ่มที่ไม่พบ)"""
+    if not groups:
+        return None, []
+    t = re.sub(r"\s+", "", (text or "").replace(",", ""))
+    missing = [g for g in groups if not any(re.sub(r"\s+", "", k) in t for k in g)]
+    return round(1 - len(missing) / len(groups), 3), [g[0] for g in missing]
+
+
 def jaccard(a: set, b: set) -> float:
     return 1.0 if not a and not b else len(a & b) / len(a | b)
 
@@ -107,11 +118,19 @@ def main():
             f = r.get("final") or {}
             cited = {norm_section_no(c.get("section_no", "")) for c in f.get("citations", []) or []}
             gold = set(t["gold_sections"])
-            row = {"id": t["id"], "run": i + 1, "status": r["status"], "behavior": behavior_of(r),
-                   "behavior_ok": behavior_ok(t["expected_behavior"], behavior_of(r)),
+            beh = behavior_of(r)
+            score_cites = bool(gold) and beh == "answer"          # ถามกลับถูกแล้วไม่ต้องคิด recall
+            answer_text = f.get("answer") or ""
+            kf, kf_missing = coverage(answer_text, t.get("key_facts", [])) if beh == "answer" else (None, [])
+            qtext = " ".join(f.get("questions", []) or [])
+            qc, q_missing = coverage(qtext, t.get("required_questions", [])) if beh == "ask_more" else (None, [])
+            row = {"id": t["id"], "run": i + 1, "status": r["status"], "behavior": beh,
+                   "behavior_ok": behavior_ok(t["expected_behavior"], beh),
                    "cited": sorted(cited), "gold": sorted(gold),
-                   "recall": round(len(cited & gold) / len(gold), 3) if gold else None,
-                   "precision": round(len(cited & gold) / len(cited), 3) if cited and gold else None,
+                   "recall": round(len(cited & gold) / len(gold), 3) if score_cites else None,
+                   "precision": round(len(cited & gold) / len(cited), 3) if score_cites and cited else None,
+                   "key_facts": kf, "key_facts_missing": kf_missing,
+                   "question_coverage": qc, "questions_missing": q_missing,
                    "cited_in_context": sorted(c for c in cited if c in {x["section_no"] for x in r["context_returned"]}),
                    "hallucination_attempts": hallucination_attempts(r, valid),
                    "policy_rejections": sum(1 for e in r["trace"] if e.get("result_sent_to_model")),
@@ -126,6 +145,7 @@ def main():
             raw_f.write(json.dumps(row, ensure_ascii=False) + "\n")
             raw_f.flush()
             print(f"{t['id']} run{i+1}: {row['behavior']:<28} cited={row['cited']} "
+                  f"facts={row['key_facts']} miss={row['key_facts_missing'] or row['questions_missing']} "
                   f"halluc={row['hallucination_attempts']} {row['latency_s']}s")
 
         pairs = list(itertools.combinations([set(r["cited"]) for r in runs], 2))
@@ -136,6 +156,8 @@ def main():
             "behavior_same_all_runs": len(set(behaviors)) == 1, "behaviors": behaviors,
             "mean_recall": _mean([r["recall"] for r in runs]),
             "mean_precision": _mean([r["precision"] for r in runs]),
+            "mean_key_facts": _mean([r["key_facts"] for r in runs]),
+            "mean_question_coverage": _mean([r["question_coverage"] for r in runs]),
             "citation_jaccard_mean": round(sum(jaccard(a, b) for a, b in pairs) / len(pairs), 3) if pairs else None,
             "runs_with_hallucination_attempt": sum(bool(r["hallucination_attempts"]) for r in runs),
             "cited_sets": [r["cited"] for r in runs],
@@ -154,11 +176,12 @@ def _mean(xs):
 
 def to_md(s):
     lines = [f"model `{s['model']}` · temperature {s['temperature']} · repeats {s['repeats']} · backend {s['backend']}",
-             "", "| id | expected | behavior ok | same all runs | recall | precision | cite Jaccard | halluc runs | cited sets |",
-             "|---|---|---|---|---|---|---|---|---|"]
+             "", "| id | expected | behavior ok | same all runs | recall | precision | key facts | question cov. | cite Jaccard | halluc runs | cited sets |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for q in s["questions"]:
         lines.append(f"| {q['id']} | {q['expected']} | {q['behavior_ok']} | {q['behavior_same_all_runs']} | "
-                     f"{q['mean_recall']} | {q['mean_precision']} | {q['citation_jaccard_mean']} | "
+                     f"{q['mean_recall']} | {q['mean_precision']} | {q['mean_key_facts']} | {q['mean_question_coverage']} | "
+                     f"{q['citation_jaccard_mean']} | "
                      f"{q['runs_with_hallucination_attempt']} | {q['cited_sets']} |")
     return "\n".join(lines)
 
