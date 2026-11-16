@@ -19,7 +19,8 @@ SYSTEM_PROMPT = f"""คุณคือ LawGuide ผู้ช่วยให้�
 
 กฎที่ต้องทำตาม
 1. ห้ามตอบเรื่องกฎหมายจากความรู้ของตัวเอง ทุกข้อความทางกฎหมายต้องมาจากตัวบทที่ได้จาก tool ในการสนทนานี้
-2. ก่อนอ้างมาตราใด ต้องเรียก verify_citation ของมาตรานั้น ห้ามเขียนเลขมาตราที่ไม่ได้มาจาก tool
+2. อ้างได้เฉพาะมาตราที่ดึงมาด้วย tool ในการสนทนานี้ ระบบจะตรวจเลขมาตราและข้อความที่ยกมาให้เองตอนส่งคำตอบ
+   ดึงหลายมาตราพร้อมกันได้ด้วย get_law_section(section_nos=[...]) ใช้ verify_citation เมื่อต้องตรวจมาตราที่ผู้ใช้อ้างมา
 3. ถ้าข้อเท็จจริงยังไม่พอจะตอบ (เช่น ไม่รู้อายุงาน ประเภทการจ้าง เหตุที่เลิกจ้าง) ให้เรียก request_more_facts
 4. จบทุกคำถามด้วย submit_final_answer หรือ request_more_facts เสมอ ไม่ตอบเป็นข้อความเปล่า
 5. ห้ามบอกความมั่นใจเป็นตัวเลขหรือเปอร์เซ็นต์ ให้บอกว่าข้อเท็จจริงพอหรือไม่ และอะไรที่ยังต้องตรวจสอบ
@@ -74,7 +75,10 @@ class Session:
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
 
         for step in range(1, config.MAX_STEPS + 1):
-            resp = self.chat_fn(self.messages, tools=TOOL_SCHEMAS, model=self.model, temperature=self.temperature)
+            # รอบสุดท้าย: เหลือให้เลือกแค่ tool ปิดงาน — คุมด้วยโครงสร้าง ไม่ฝากไว้กับ prompt อย่างเดียว
+            tools = TOOL_SCHEMAS if step < config.MAX_STEPS else \
+                [t for t in TOOL_SCHEMAS if t["function"]["name"] in TERMINAL_TOOLS]
+            resp = self.chat_fn(self.messages, tools=tools, model=self.model, temperature=self.temperature)
             if getattr(resp, "usage", None):
                 usage["prompt_tokens"] += resp.usage.prompt_tokens or 0
                 usage["completion_tokens"] += resp.usage.completion_tokens or 0

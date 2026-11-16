@@ -32,10 +32,11 @@ TOOL_SCHEMAS = [
             "required": ["query"]}}},
     {"type": "function", "function": {
         "name": "get_law_section",
-        "description": "ดึงข้อความเต็มของมาตราตามเลขมาตรา เช่น '41', '59/1', '118'",
+        "description": "ดึงข้อความเต็มของมาตราตามเลขมาตรา ดึงหลายมาตราได้ในครั้งเดียว เช่น ['70', '123', '124']",
         "parameters": {"type": "object", "properties": {
-            "section_no": {"type": "string", "description": "เลขมาตรา ไม่ต้องมีคำว่า 'มาตรา'"}},
-            "required": ["section_no"]}}},
+            "section_nos": {"type": "array", "items": {"type": "string"},
+                            "description": "เลขมาตรา ไม่ต้องมีคำว่า 'มาตรา' (สูงสุด 6 มาตรา)"},
+            "section_no": {"type": "string", "description": "ใช้เมื่อดึงมาตราเดียว"}}}}},
     {"type": "function", "function": {
         "name": "verify_citation",
         "description": "ตรวจว่ามาตรานี้มีอยู่จริงในฐานข้อมูล และ (ถ้าให้ข้อความมา) ข้อความที่จะยกอ้างปรากฏอยู่ในมาตรานั้นจริง "
@@ -147,13 +148,22 @@ class ToolExecutor:
                 "note": "ใช้เฉพาะข้อความในผลลัพธ์นี้เป็นฐานของคำตอบ" if hits else
                         "ไม่พบมาตราที่เกี่ยวข้อง — ห้ามตอบจากความรู้ทั่วไป ให้ถามข้อเท็จจริงเพิ่มหรือบอกว่าไม่พบ"}
 
-    def t_get_law_section(self, section_no: str):
-        d = self.store.get(section_no)
-        if not d:
-            return {"found": False, "section_no": norm_section_no(section_no),
-                    "note": "ไม่มีมาตรานี้ในฐานข้อมูล ห้ามอ้างมาตรานี้"}
-        self._remember([d])
-        return {"found": True, **_section_view(d, config.TOOL_RESULT_MAX_CHARS)}
+    def t_get_law_section(self, section_no: str | None = None, section_nos: list | None = None):
+        nos = list(section_nos or []) + ([section_no] if section_no else [])
+        if not nos:
+            return {"error": "ต้องระบุ section_nos หรือ section_no"}
+        nos = nos[:6]
+        per = max(800, config.TOOL_RESULT_MAX_CHARS // len(nos))
+        out = []
+        for no in nos:
+            d = self.store.get(no)
+            if not d:
+                out.append({"found": False, "section_no": norm_section_no(no),
+                            "note": "ไม่มีมาตรานี้ในฐานข้อมูล ห้ามอ้างมาตรานี้"})
+                continue
+            self._remember([d])
+            out.append({"found": True, **_section_view(d, per)})
+        return out[0] if len(out) == 1 else {"sections": out}
 
     def t_verify_citation(self, section_no: str, quoted_text: str | None = None):
         no = norm_section_no(section_no)

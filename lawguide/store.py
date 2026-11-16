@@ -60,7 +60,9 @@ class LocalStore:
 
 
 class OpenSearchStore:
-    name = "opensearch-hybrid"
+    @property
+    def name(self):
+        return "opensearch-hybrid(bm25+vector)" if config.USE_VECTOR else "opensearch-bm25"
 
     def __init__(self):
         from opensearchpy import OpenSearch

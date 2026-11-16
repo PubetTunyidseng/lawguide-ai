@@ -110,7 +110,7 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     raw_f = open(outdir / "raw_runs.jsonl", "w", encoding="utf-8")
     summary = {"model": args.model, "temperature": args.temperature, "repeats": args.repeats,
-               "backend": config.BACKEND, "questions": []}
+               "backend": f"{config.BACKEND} ({store.name})", "questions": []}
 
     for t in tests:
         runs = []

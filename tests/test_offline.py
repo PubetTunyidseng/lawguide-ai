@@ -50,6 +50,8 @@ def test_tools_and_policy():
     r = ex.run("search_law_sections", {"query": "ลาคลอดบุตร ค่าจ้าง"})
     assert r["n_results"] >= 1
     assert ex.run("get_law_section", {"section_no": "มาตรา ๔๑/๑"})["found"]
+    multi = ex.run("get_law_section", {"section_nos": ["41", "59", "999"]})["sections"]
+    assert [x["found"] for x in multi] == [True, True, False]
     assert not ex.run("get_law_section", {"section_no": "999"})["found"]
     v = ex.run("verify_citation", {"section_no": "41", "quoted_text": "ลูกจ้างหญิงลาเพื่อคลอดบุตร"})
     assert v["exists"] and v["quote_found"]
@@ -147,6 +149,21 @@ def test_text_tool_call_nudge_and_budget():
     r = harness.Session(store, chat_fn=fake).ask("ลาคลอดได้กี่วัน")
     assert r["status"] == "answered"
     assert any("เป็นข้อความ" in x for x in seen)          # เตือนว่าพิมพ์ tool เป็นข้อความ
+
+
+def test_last_step_only_terminal_tools():
+    store, _, _ = make_store()
+    offered = []
+
+    def fake(messages, tools=None, **k):
+        offered.append(sorted(t["function"]["name"] for t in tools))
+        if len(offered) < config.MAX_STEPS:
+            return _resp([_call(len(offered), "search_law_sections", {"query": "ลา"})])
+        return _resp([_call(99, "request_more_facts", {"missing_facts": ["x"], "questions": ["y?"]})])
+    r = harness.Session(store, chat_fn=fake).ask("ลา")
+    assert r["status"] == "need_more_facts"
+    assert offered[-1] == ["request_more_facts", "submit_final_answer"]
+    assert "search_law_sections" in offered[0]
 
 
 def test_agent_gives_up_when_hallucinating():
