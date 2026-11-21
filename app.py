@@ -144,4 +144,11 @@ with gr.Blocks(title="LawGuide") as demo:
     reset.click(lambda: ([], None), None, [chat, sess])
 
 if __name__ == "__main__":
-    demo.launch()
+    import os
+    # ตอนสาธิตทางไกล: GRADIO_SHARE=1 ได้ลิงก์ *.gradio.live (อยู่ 72 ชม. วิ่งผ่านเครื่องนี้ ใช้ key ของเครื่องนี้)
+    # ควรตั้ง GRADIO_AUTH=user:pass ด้วย เพราะใครได้ลิงก์ก็ใช้เครดิต OpenRouter ของเราได้
+    share = os.environ.get("GRADIO_SHARE", "0") == "1"
+    auth = tuple(os.environ["GRADIO_AUTH"].split(":", 1)) if ":" in os.environ.get("GRADIO_AUTH", "") else None
+    if share and not auth:
+        print("⚠️ GRADIO_SHARE=1 แต่ไม่ได้ตั้ง GRADIO_AUTH — ใครได้ลิงก์ก็ใช้ได้")
+    demo.launch(share=share, auth=auth)

@@ -15,6 +15,11 @@ OSS_MODEL=${OSS_MODEL:-qwen/qwen3-235b-a22b-2507}
 COM_MODEL=${COM_MODEL:-openai/gpt-4.1-mini}
 JUDGE=${JUDGE:-google/gemini-2.5-flash}
 REPEATS=${REPEATS:-5}
+# พารามิเตอร์ที่ส่งให้ API ต้องเหมือนกันทุกโมเดลที่เทียบ ไม่งั้นไม่ได้เปลี่ยนแค่โมเดล
+# frequency_penalty ถูกตัดออก: gpt-4.1-mini และ gemini-2.5-flash บน OpenRouter ไม่รองรับ (ตรวจด้วย check_models.py)
+# require_parameters=true คงไว้ เพื่อให้ OpenRouter ปฏิเสธแทนที่จะทิ้งพารามิเตอร์ไปเงียบ ๆ
+export LLM_EXTRA_JSON=${V4_EXTRA_JSON:-'{"provider": {"sort": "throughput", "require_parameters": true}}'}
+echo "LLM_EXTRA_JSON=$LLM_EXTRA_JSON"
 
 echo "▶ 1/5 offline tests"
 python -m pytest -q tests

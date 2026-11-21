@@ -1,0 +1,709 @@
+{
+  "model": "qwen/qwen3-235b-a22b-2507",
+  "temperature": 0.2,
+  "repeats": 5,
+  "backend": "opensearch (opensearch-hybrid(bm25+vector))",
+  "judge_model": "google/gemini-2.5-flash",
+  "harness": {
+    "MAX_STEPS": 8,
+    "TOP_K": 5,
+    "MIN_TOP_K": 5,
+    "DUPLICATE_QUERY": "skip",
+    "MAX_POLICY_RETRIES": 2
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 0.8,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ]
+      ],
+      "unsupported_sentences": [
+        "ซึ่งมาตราดังกล่าวได้รับการแก้ไขเพิ่มเติมโดยพระราชบัญญัติคุ้มครองแรงงาน (ฉบับที่ 9) พ.ศ. 2568",
+        "ระยะเวลาการทำงาน 2 ปี ไม่กระทบสิทธินี้",
+        "ระยะเวลาที่เกิน 60 วันจะไม่ได้รับค่าจ้าง เว้นแต่จะมีข้อตกลงในสัญญาจ้างหรือข้อบังคับของบริษัท"
+      ]
+    },
+    {
+      "id": "q02",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q03",
+      "expected": "ask_more",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": 1.0,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": null,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q04",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.8,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "118"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118",
+          "119"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q05",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.733,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.517,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "61",
+          "70"
+        ],
+        [
+          "61"
+        ],
+        [
+          "61",
+          "70"
+        ],
+        [
+          "61"
+        ],
+        [
+          "61",
+          "65",
+          "72"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q06",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 0.6,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.567,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "32",
+          "57"
+        ],
+        [
+          "57"
+        ],
+        [
+          "57"
+        ],
+        [
+          "57",
+          "76"
+        ],
+        [
+          "57",
+          "76"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q07",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.5,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {
+        "QUOTE_MATCHES": 5
+      },
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q08",
+      "expected": "out_of_scope",
+      "gold_status": "final",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 0.2,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": [
+        "ปัญหาการรุกที่ดินเป็นเรื่องกฎหมายแพ่งและพาณิชย์",
+        "ไม่อยู่ในขอบเขตของพระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541",
+        "ปัญหาการรุกที่ดินเป็นเรื่องกฎหมายแพ่งและพาณิชย์",
+        "ไม่อยู่ในขอบเขตของพระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541",
+        "ปัญหาการรุกที่ดินเป็นเรื่องของกฎหมายแพ่งและพาณิชย์",
+        "ไม่อยู่ในขอบเขตของพระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541",
+        "ปัญหาการรุกที่ดินเป็นเรื่องของกฎหมายแพ่งและพาณิชย์",
+        "ไม่อยู่ในขอบเขตของพระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541"
+      ]
+    },
+    {
+      "id": "q09",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 0.9,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.583,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "123",
+          "70"
+        ],
+        [
+          "123",
+          "125",
+          "70"
+        ],
+        [
+          "123",
+          "124",
+          "125",
+          "70"
+        ],
+        [
+          "123",
+          "124",
+          "125"
+        ],
+        [
+          "123",
+          "70"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q10",
+      "expected": "answer_or_ask",
+      "gold_status": "final",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "answer",
+        "out_of_scope_or_unanswerable",
+        "answer",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.4,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "3/5",
+      "mean_judge_supported": 0.4,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "122",
+          "135",
+          "60",
+          "62",
+          "87"
+        ],
+        [],
+        [
+          "122",
+          "135",
+          "60",
+          "62",
+          "87"
+        ],
+        [],
+        []
+      ],
+      "unsupported_sentences": [
+        "พระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541 ไม่ได้กำหนดให้นายจ้างต้องจ่ายโบนัสให้ลูกจ้างไว้ในมาตราใด",
+        "รวมถึงมาตรา 999 ไม่มีอยู่ในกฎหมายฉบับนี้",
+        "การจ่ายโบนัสขึ้นอยู่กับข้อตกลงในสัญญาจ้างหรือประกาศของนายจ้าง",
+        "พระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541 ไม่ได้กำหนดให้นายจ้างต้องจ่ายโบนัสให้ลูกจ้างไว้ในมาตราใด",
+        "ดังนั้นสิทธิได้รับโบนัสขึ้นอยู่กับข้อตกลงในสัญญาจ้างหรือประกาศของนายจ้าง",
+        "ไม่พบมาตรา 999 ในพระราชบัญญัติคุ้มครองแรงงาน พ.ศ. 2541",
+        "จึงไม่สามารถอ้างสิทธิได้จากมาตรานี้"
+      ]
+    },
+    {
+      "id": "q11",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "4/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "ask_more",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.4,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {
+        "QUOTE_MATCHES": 2
+      },
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "118",
+          "119"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118",
+          "119"
+        ],
+        [],
+        [
+          "118"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q12",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q13",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "123",
+          "70"
+        ],
+        [
+          "123",
+          "70"
+        ],
+        [
+          "123",
+          "70"
+        ],
+        [
+          "123",
+          "70"
+        ],
+        [
+          "123",
+          "70"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q14",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "3/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "ask_more",
+        "answer",
+        "answer",
+        "answer",
+        "ask_more"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.4,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [
+          "30"
+        ],
+        [
+          "30"
+        ],
+        [
+          "30"
+        ],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q15",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": 1.0,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": null,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    }
+  ],
+  "totals": {
+    "runs": 75,
+    "behavior_ok": "72/75",
+    "issue_type_ok": "73/75",
+    "mean_recall": 0.952,
+    "mean_precision": 0.926,
+    "mean_key_facts": 1.0,
+    "mean_question_coverage": 1.0,
+    "runs_with_hallucination_attempt": 0,
+    "answers_with_unsupported_sentence": 10,
+    "judged_answers": 62,
+    "policy_rejected_rules": {
+      "QUOTE_MATCHES": 7
+    },
+    "top_k_clamped": 0,
+    "duplicate_queries": 0,
+    "mean_latency_s": 17.711
+  }
+}

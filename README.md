@@ -74,7 +74,8 @@ bash run.sh --vector   # เพิ่ม bge-m3 ให้เป็น hybrid sea
 python ask.py "คำถาม"   # ทดสอบใน Terminal พร้อมแสดง tool calls
 python -m pytest -q tests                  # test แบบไม่เรียก LLM
 bash eval/run_v4.sh                        # eval open-source vs commercial + judge
-python eval/compare.py v3-hybrid v4-oss    # เทียบผลหลายรอบ
+python eval/compare.py v3-hybrid v4-oss    # เทียบผลลัพธ์หลายรอบ
+python eval/trajectory.py v3-hybrid v4-oss # เทียบการทำงานระหว่างทาง (tool, retrieval, step, ค่าใช้จ่าย) จาก log
 ```
 ไม่มี Docker: ตั้ง `BACKEND=local` ใช้ BM25 ในหน่วยความจำแทน (ใช้ทดสอบเท่านั้น ไม่ใช่ External store)
 
@@ -86,7 +87,8 @@ python eval/compare.py v3-hybrid v4-oss    # เทียบผลหลาย�
 | v1 | 38/50 | รอบแรกหลังเปลี่ยนเป็น Qwen3 |
 | v2 | 48/50 | บังคับ tool call, เตือนงบ step, quote แบบละข้อความ, ปฏิเสธมาตราที่ไม่มีจริง |
 | v3 (bm25 / hybrid) | 70/75 · 70/75 | ดึงหลายมาตราต่อครั้ง, step สุดท้ายเหลือเฉพาะ tool ปิดรอบ, เพิ่มคำถามภาษาพูด 5 ข้อ |
-| v4 | รอรัน | top_k ขั้นต่ำ, กันค้นซ้ำ, `NUMBER_GROUNDED`, `issue_type`, LLM judge, เทียบ commercial |
+| v4-oss (Qwen3) | 72/75 | top_k ขั้นต่ำ, กันค้นซ้ำ, `NUMBER_GROUNDED`, `issue_type`, LLM judge · issue type ok 73/75 |
+| v4-com (gpt-4.1-mini) | 64/75 | harness เดียวกัน เปลี่ยนแค่โมเดล · เร็วกว่า 3 เท่า ค่าใช้จ่ายต่อคำถามเท่ากัน ถามกลับเกินจำเป็น |
 
 ## Map กับเกณฑ์สอบ
 | เกณฑ์ | อยู่ที่ไหน |
@@ -98,13 +100,13 @@ python eval/compare.py v3-hybrid v4-oss    # เทียบผลหลาย�
 | ห้ามข้อมูลจริง/ชื่อจริง | test set ใช้ชื่อสมมติ · PII guard mask ก่อนส่ง LLM · log ไม่เก็บข้อความต้นฉบับ |
 | Harness tuning (ถามซ้ำ 5 ครั้ง) | `eval/run_eval.py --repeats 5` → `behavior_same_all_runs`, `citation_jaccard_mean` · ประวัติการปรับใน `docs/eval_report.md` |
 | Policy | `data/citation_policy.json` + `policy.py` |
-| Open-source เทียบ commercial | `bash eval/run_v4.sh` (tag `v4-oss` / `v4-com`, judge ตัวเดียวกัน) |
+| Open-source เทียบ commercial | `bash eval/run_v4.sh` → Qwen3 72/75 vs gpt-4.1-mini 64/75 (harness/judge เดียวกัน) |
 | Decision model + LLM extract ข้อมูลอ่อนไหว | `data/pii_decision_rules.json` + `pii.py` (`PII_LLM_EXTRACT=1`) |
 
 ## ข้อจำกัดที่รู้อยู่
 - ไม่มี tool ค้นคำพิพากษาศาลฎีกา (เหตุผลในตารางหลักการด้านบน)
 - `gold_sections` และ `key_facts` ใน test set เป็นร่าง ต้องให้ผู้มีความรู้กฎหมายตรวจ
-- คำในชีวิตประจำวันที่ไม่ตรงกับศัพท์ตัวบท (เช่น ลาพักร้อน → หยุดพักผ่อนประจำปี) ยังค้นไม่เจอใน v3 (q14 0/5) ดู `docs/eval_report.md`
+- คำในชีวิตประจำวันที่ไม่ตรงกับศัพท์ตัวบท (เช่น ลาพักร้อน → หยุดพักผ่อนประจำปี) ยังค้นไม่เจอ ใน v4 q14 ผ่านได้เพราะโมเดลตามการอ้างอิงในตัวบท หรือไล่ดึงมาตราเอง ไม่ใช่เพราะการค้นดีขึ้น ดู `docs/eval_report.md`
 - ฉบับที่ 9 (2568) อ่านเนื้อความจาก PDF ราชกิจจาฯ ไม่ได้เพราะฟอนต์ วันมีผลจึงยืนยันจากภาคผนวกฉบับกฤษฎีกา
 - rule ตรวจชื่อคนจับได้เฉพาะชื่อที่มีคำนำหน้า (นาย/นาง/นางสาว) ชื่อเล่นหรือ "คุณ..." ต้องพึ่ง LLM extractor
 - `NUMBER_GROUNDED` ตรวจเฉพาะตัวเลขที่มีหน่วยในเนื้อคำตอบ ตัวเลขที่คำนวณต่อ (เช่น ค่าจ้าง × 90 วัน) จะถูกตีกลับให้ระบุที่มา

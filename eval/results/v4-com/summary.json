@@ -1,0 +1,673 @@
+{
+  "model": "openai/gpt-4.1-mini",
+  "temperature": 0.2,
+  "repeats": 5,
+  "backend": "opensearch (opensearch-hybrid(bm25+vector))",
+  "judge_model": "google/gemini-2.5-flash",
+  "harness": {
+    "MAX_STEPS": 8,
+    "TOP_K": 5,
+    "MIN_TOP_K": 5,
+    "DUPLICATE_QUERY": "skip",
+    "MAX_POLICY_RETRIES": 2
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 0.91,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ]
+      ],
+      "unsupported_sentences": [
+        "ข้อความในมาตรานี้ได้รับการแก้ไขเพิ่มเติมล่าสุดในปี 2568",
+        "ข้อมูลนี้เป็นไปตามกฎหมายฉบับแก้ไขล่าสุด พ.ศ. 2568"
+      ]
+    },
+    {
+      "id": "q02",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q03",
+      "expected": "ask_more",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": 0.7,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": null,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q04",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.8,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "118"
+        ],
+        [
+          "118",
+          "121"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q05",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "61"
+        ],
+        [
+          "61"
+        ],
+        [
+          "61"
+        ],
+        [
+          "61"
+        ],
+        [
+          "61"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q06",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q07",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.5,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "0/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q08",
+      "expected": "out_of_scope",
+      "gold_status": "final",
+      "behavior_ok": "0/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": null,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q09",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 0.8,
+      "mean_precision": 0.95,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.717,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "123",
+          "124"
+        ],
+        [
+          "123",
+          "124",
+          "70"
+        ],
+        [
+          "123",
+          "124",
+          "70",
+          "76"
+        ],
+        [
+          "123",
+          "124"
+        ],
+        [
+          "123",
+          "124",
+          "70"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q10",
+      "expected": "answer_or_ask",
+      "gold_status": "final",
+      "behavior_ok": "4/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "blocked_by_policy",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {
+        "HAS_CITATION": 2
+      },
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q11",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "0/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": null,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q12",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q13",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "0/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "70"
+        ],
+        [
+          "70"
+        ],
+        [
+          "70"
+        ],
+        [
+          "70"
+        ],
+        [
+          "70"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q14",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "30"
+        ],
+        [
+          "30"
+        ],
+        [
+          "30"
+        ],
+        [
+          "30"
+        ],
+        [
+          "30"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q15",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "answer",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": 0.0,
+      "mean_precision": 0.667,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": 1.0,
+      "citation_jaccard_mean": 0.6,
+      "runs_with_hallucination_attempt": 0,
+      "issue_type_ok": "5/5",
+      "mean_judge_supported": 1.0,
+      "policy_rejected_rules": {},
+      "top_k_clamped": 0,
+      "duplicate_queries": 0,
+      "cited_sets": [
+        [
+          "118",
+          "121",
+          "17/1"
+        ],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    }
+  ],
+  "totals": {
+    "runs": 75,
+    "behavior_ok": "64/75",
+    "issue_type_ok": "65/75",
+    "mean_recall": 0.961,
+    "mean_precision": 0.94,
+    "mean_key_facts": 1.0,
+    "mean_question_coverage": 0.833,
+    "runs_with_hallucination_attempt": 0,
+    "answers_with_unsupported_sentence": 2,
+    "judged_answers": 52,
+    "policy_rejected_rules": {
+      "HAS_CITATION": 2
+    },
+    "top_k_clamped": 0,
+    "duplicate_queries": 0,
+    "mean_latency_s": 5.967
+  }
+}
