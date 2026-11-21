@@ -6,6 +6,7 @@ import json
 import re
 
 from . import config
+from .quantities import quantities, quantity_set
 from .store import norm_section_no
 from .tools import quote_in_text
 
@@ -63,9 +64,37 @@ def check_final(final: dict, executor) -> list:
         elif no not in seen:
             add("ANSWER_MENTIONS_GROUNDED", f"คำตอบเขียนถึงมาตรา {no} โดยไม่ได้ดึงตัวบทมาในรอบนี้", no)
 
+    _check_numbers(answer, cited, executor, add)
+
     if final.get("facts_sufficient") and not cited:
         add("HAS_CITATION", "คำตอบบอกว่าข้อเท็จจริงเพียงพอ แต่ไม่มีการอ้างมาตราใดเลย")
     return out
+
+
+def _check_numbers(answer: str, cited: list, executor, add) -> None:
+    """NUMBER_GROUNDED: ตัวเลขที่มีหน่วยในคำตอบต้องหาเจอในแหล่งที่อนุญาต
+    แหล่งที่อนุญาต = มาตราที่อ้าง (citations + "มาตรา N" ในคำตอบที่ดึงมาแล้ว) + ข้อความของผู้ใช้ + ผล find_agency_procedure
+    ไม่ใช่ทุกมาตราที่ค้นเจอ เพราะคำถามคือ "มาตราที่อ้างรองรับตัวเลขนี้ไหม" ไม่ใช่ "ตัวเลขนี้เคยผ่านตาไหม"
+    """
+    r = RULES.get("NUMBER_GROUNDED")
+    if not (r and r["enabled"]):
+        return
+    units, aliases = r.get("units"), r.get("unit_aliases")
+    nos = [n for n in dict.fromkeys(cited + [m for m in mentioned_sections(answer) if m in executor.seen_sections])]
+    pool = set()
+    for no in nos:
+        doc = executor.seen_sections.get(no) or executor.store.get(no)
+        if doc:
+            pool |= quantity_set(doc["text"], units, aliases)
+    for t in getattr(executor, "user_texts", []) + getattr(executor, "agency_texts", []):
+        pool |= quantity_set(t, units, aliases)
+    missing = []
+    for q in quantities(answer, units, aliases):
+        if (round(q["value"], 2), q["unit"]) not in pool and q["span"] not in missing:
+            missing.append(q["span"])
+    for span in missing:
+        add("NUMBER_GROUNDED", f"คำตอบระบุ '{span}' แต่ไม่พบตัวเลขนี้ในมาตราที่อ้าง ({', '.join(nos) or 'ไม่มี'}) "
+                               "หรือในข้อเท็จจริงที่ผู้ใช้ให้มา", None)
 
 
 def blocking(violations: list) -> list:

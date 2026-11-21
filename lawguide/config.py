@@ -44,9 +44,9 @@ import json as _json
 LLM_EXTRA = _json.loads(env("LLM_EXTRA_JSON", "{}") or "{}")
 
 # ---------- Harness ----------
-MAX_STEPS = int(env("MAX_STEPS", "8"))
+MAX_STEPS = int(env("MAX_STEPS", "8"))                   # จำนวนรอบ tool call สูงสุดต่อคำถาม
 TOOL_CHOICE = env("TOOL_CHOICE", "required")             # required = บังคับเรียก tool ทุกรอบ | auto
-BUDGET_WARN_AT = int(env("BUDGET_WARN_AT", "2"))         # เหลือกี่รอบแล้วเตือนให้ส่งคำตอบ                   # จำนวนรอบ tool call สูงสุดต่อคำถาม
+BUDGET_WARN_AT = int(env("BUDGET_WARN_AT", "2"))         # เหลือกี่รอบแล้วเตือนให้ส่งคำตอบ
 MAX_POLICY_RETRIES = int(env("MAX_POLICY_RETRIES", "2")) # ให้โมเดลแก้คำตอบเมื่ออ้างมาตราที่ตรวจไม่ผ่าน
 TOOL_RESULT_MAX_CHARS = int(env("TOOL_RESULT_MAX_CHARS", "6000"))
 RELATED_MAX = int(env("RELATED_MAX", "6"))               # จำนวนมาตราที่ "อ้างถึงมาตรานี้" ที่แนบไปกับผล tool
@@ -56,7 +56,12 @@ BACKEND = env("BACKEND", "opensearch")                  # opensearch | local
 OPENSEARCH_HOST = env("OPENSEARCH_HOST", "localhost")
 OPENSEARCH_PORT = int(env("OPENSEARCH_PORT", "9200"))
 INDEX_NAME = env("INDEX_NAME", "lawguide-lpa")
-TOP_K = int(env("TOP_K", "5"))
+TOP_K = int(env("TOP_K", "5"))                           # ค่าเริ่มต้นเมื่อโมเดลไม่ระบุ top_k
+# โมเดลขอ top_k ได้ แต่ harness ไม่ให้ต่ำกว่า MIN_TOP_K (v3: q14 โมเดลขอ top_k=1 ทุกครั้ง จึงไม่เคยเห็นมาตรา 30)
+MIN_TOP_K = int(env("MIN_TOP_K", str(TOP_K)))
+MAX_TOP_K = int(env("MAX_TOP_K", "10"))
+# ค้นคำชุดเดิมซ้ำในคำถามเดียวกัน: skip = ไม่ค้นซ้ำ ส่งผลเดิม + คำแนะนำให้เปลี่ยนคำค้น | allow = ค้นซ้ำตามปกติ
+DUPLICATE_QUERY = env("DUPLICATE_QUERY", "skip")
 _uv = env("USE_VECTOR", "auto")                        # 1 | 0 | auto (ใช้ถ้าติดตั้ง sentence-transformers ไว้)
 if _uv == "auto":
     import importlib.util

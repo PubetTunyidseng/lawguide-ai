@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 runs/
 tests/_runs/
-eval/results/
+eval/results/_*/
 .pytest_cache/
 .venv/
 venv/

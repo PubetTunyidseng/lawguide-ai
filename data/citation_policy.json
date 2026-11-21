@@ -1,17 +1,64 @@
 {
   "note": "นโยบายตรวจคำตอบก่อนแสดงผู้ใช้ — severity: block = ส่งกลับให้โมเดลแก้ (ถ้าแก้ไม่ได้ภายใน MAX_POLICY_RETRIES จะไม่แสดงคำตอบ), warn = แสดงคำเตือนคู่คำตอบ",
   "rules": [
-    {"id": "CITE_EXISTS", "enabled": true, "severity": "block",
-     "desc": "ทุกมาตราที่อ้างใน citations ต้องมีอยู่จริงในฐานข้อมูล"},
-    {"id": "CITE_IN_CONTEXT", "enabled": true, "severity": "block",
-     "desc": "ทุกมาตราที่อ้างต้องเคยถูกคืนจาก tool ในรอบนี้ (คำตอบต้องอยู่ในกรอบ context)"},
-    {"id": "ANSWER_MENTIONS_GROUNDED", "enabled": true, "severity": "block",
-     "desc": "ทุก 'มาตรา N' ที่เขียนในเนื้อคำตอบต้องมีอยู่จริงและอยู่ใน context ของรอบนี้"},
-    {"id": "QUOTE_MATCHES", "enabled": true, "severity": "block",
-     "desc": "ข้อความที่ยกมาใน citations.quoted_text ต้องตรงกับตัวบท"},
-    {"id": "HAS_CITATION", "enabled": true, "severity": "block",
-     "desc": "คำตอบที่บอกว่าข้อเท็จจริงเพียงพอ ต้องมีการอ้างมาตราอย่างน้อย 1 มาตรา"},
-    {"id": "VERSION_FLAG", "enabled": true, "severity": "warn",
-     "desc": "มาตราที่อ้างมีธงว่าอาจไม่ใช่ฉบับปัจจุบัน"}
+    {
+      "id": "CITE_EXISTS",
+      "enabled": true,
+      "severity": "block",
+      "desc": "ทุกมาตราที่อ้างใน citations ต้องมีอยู่จริงในฐานข้อมูล"
+    },
+    {
+      "id": "CITE_IN_CONTEXT",
+      "enabled": true,
+      "severity": "block",
+      "desc": "ทุกมาตราที่อ้างต้องเคยถูกคืนจาก tool ในรอบนี้ (คำตอบต้องอยู่ในกรอบ context)"
+    },
+    {
+      "id": "ANSWER_MENTIONS_GROUNDED",
+      "enabled": true,
+      "severity": "block",
+      "desc": "ทุก 'มาตรา N' ที่เขียนในเนื้อคำตอบต้องมีอยู่จริงและอยู่ใน context ของรอบนี้"
+    },
+    {
+      "id": "QUOTE_MATCHES",
+      "enabled": true,
+      "severity": "block",
+      "desc": "ข้อความที่ยกมาใน citations.quoted_text ต้องตรงกับตัวบท"
+    },
+    {
+      "id": "HAS_CITATION",
+      "enabled": true,
+      "severity": "block",
+      "desc": "คำตอบที่บอกว่าข้อเท็จจริงเพียงพอ ต้องมีการอ้างมาตราอย่างน้อย 1 มาตรา"
+    },
+    {
+      "id": "NUMBER_GROUNDED",
+      "enabled": true,
+      "severity": "block",
+      "desc": "ตัวเลขที่มีหน่วย (จำนวนวัน ครั้ง เท่า ปี เวลา ร้อยละ) ในคำตอบ ต้องปรากฏในมาตราที่อ้าง หรือในข้อเท็จจริงที่ผู้ใช้ให้มา หรือในข้อมูลหน่วยงานที่ tool คืนมา — กันกรณีอ้างมาตราที่มีจริงแต่ไม่ได้รองรับตัวเลขนั้น",
+      "units": [
+        "วันทำงาน",
+        "วัน",
+        "สัปดาห์",
+        "เดือน",
+        "ปี",
+        "ชั่วโมง",
+        "นาที",
+        "ครั้ง",
+        "เท่า",
+        "คน",
+        "บาท",
+        "นาฬิกา"
+      ],
+      "unit_aliases": {
+        "วันทำงาน": "วัน"
+      }
+    },
+    {
+      "id": "VERSION_FLAG",
+      "enabled": true,
+      "severity": "warn",
+      "desc": "มาตราที่อ้างมีธงว่าอาจไม่ใช่ฉบับปัจจุบัน"
+    }
   ]
 }

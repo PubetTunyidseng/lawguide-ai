@@ -83,7 +83,8 @@ def test_quote_ellipsis_and_negation():
     assert policy.check_final(ok, ex) == []
     bad = {"answer": "ตามมาตรา 999 ได้โบนัส 2 เดือน", "citations": [], "facts_sufficient": False,
            "facts_to_verify": []}
-    assert [v["rule"] for v in policy.check_final(bad, ex)] == ["ANSWER_MENTIONS_GROUNDED"]
+    rules = [v["rule"] for v in policy.check_final(bad, ex)]
+    assert rules == ["ANSWER_MENTIONS_GROUNDED", "NUMBER_GROUNDED"], rules    # "2 เดือน" ไม่มีแหล่งรองรับด้วย
 
 
 def test_pii():
@@ -95,6 +96,57 @@ def test_pii():
     assert "สมมติ" not in g["masked_text"] and "081" not in g["masked_text"]
     assert pii.thai_id_valid("1234567890121") is True
     assert pii.thai_id_valid("1234567890122") is False
+
+
+# ---------- ตัวเลขในคำตอบต้องมีในมาตราที่อ้าง (NUMBER_GROUNDED) ----------
+def make_number_store():
+    """มาตราทดสอบที่มีตัวเลข (ข้อความสมมติ ไม่ใช่ตัวบทจริง) — จำลองเคส v3 q13 ที่อ้างมาตรา 96 แทน 70"""
+    _, docs, _ = make_store()
+    base = docs[0]
+    extra = [("70", "มาตรา ๗๐ ข้อความทดสอบ ให้นายจ้างจ่ายค่าจ้างเดือนหนึ่งไม่น้อยกว่าหนึ่งครั้ง"),
+             ("96", "มาตรา ๙๖ ข้อความทดสอบ สถานประกอบกิจการที่มีลูกจ้างตั้งแต่ห้าสิบคนขึ้นไป มีกรรมการอย่างน้อยห้าคน"),
+             ("30", "มาตรา ๓๐ ข้อความทดสอบ ลูกจ้างซึ่งทำงานติดต่อกันมาแล้วครบหนึ่งปีมีสิทธิหยุดพักผ่อนประจำปีไม่น้อยกว่าหกวันทำงาน")]
+    for no, text in extra:
+        docs.append({**base, "id": f"t-{no}", "section_no": no, "text": text, "version_flags": [], "cites": [], "cited_by": []})
+    return LocalStore(docs)
+
+
+def test_quantities():
+    from lawguide.quantities import quantity_set, words_to_num
+    assert [words_to_num(x) for x in ("หนึ่งร้อยยี่สิบ", "สิบห้า", "เก้าสิบแปด", "สิบเอ็ด", "ยี่สิบ")] == [120, 15, 98, 11, 20]
+    assert quantity_set("ไม่เกินหนึ่งร้อยยี่สิบวัน") == quantity_set("ไม่เกิน 120 วัน") == {(120.0, "วัน")}
+    assert quantity_set("ไม่น้อยกว่าหนึ่งเท่าครึ่ง") == quantity_set("1.5 เท่า") == {(1.5, "เท่า")}
+    assert quantity_set("สามสิบวันทำงาน") == {(30.0, "วัน")}                       # alias วันทำงาน → วัน
+    assert quantity_set("เวลา ๒๒.๐๐ นาฬิกา") == quantity_set("22:00 น.") == {(22.0, "นาฬิกา")}
+    # ไม่ใช่ปริมาณ: เลขมาตรา ปี พ.ศ. เลขข้อ วรรค "เท่ากับ"
+    assert quantity_set("มาตรา 118 พ.ร.บ. พ.ศ. 2541 (1) ตามวรรคหนึ่ง เท่ากับค่าจ้าง") == set()
+
+
+def test_number_grounded_policy():
+    store = make_number_store()
+    ex = ToolExecutor(store, user_texts=["ทำงานมา 4 ปี เงินเดือนออกช้า"])
+    ex.run("get_law_section", {"section_nos": ["70", "96"]})
+    wrong = {"answer": "นายจ้างต้องจ่ายค่าจ้างไม่น้อยกว่าเดือนละ 1 ครั้ง ตามมาตรา 96",
+             "citations": [{"section_no": "96"}], "facts_sufficient": True, "facts_to_verify": []}
+    v = policy.check_final(wrong, ex)
+    assert [x["rule"] for x in v] == ["NUMBER_GROUNDED"] and policy.blocking(v)      # มาตรามีจริง อยู่ใน context แต่ไม่รองรับตัวเลข
+    right = {**wrong, "answer": "นายจ้างต้องจ่ายค่าจ้างไม่น้อยกว่าเดือนละหนึ่งครั้ง ตามมาตรา 70 คุณทำงานมา 4 ปี",
+             "citations": [{"section_no": "70"}]}
+    assert policy.check_final(right, ex) == []                                       # "4 ปี" มาจากข้อความผู้ใช้
+
+
+def test_top_k_floor_and_duplicate_query():
+    store = make_number_store()
+    ex = ToolExecutor(store)
+    r = ex.run("search_law_sections", {"query": "ลาพักร้อน จำนวนวัน", "top_k": 1})
+    assert r["top_k_requested"] == 1 and r["top_k_used"] == config.MIN_TOP_K
+    assert ex.stats["top_k_clamped"] == 1
+    again = ex.run("search_law_sections", {"query": "จำนวนวัน  ลาพักร้อน"})         # คำชุดเดิม สลับลำดับ
+    assert again["duplicate_query"] and again["n_results"] == 0
+    assert again["previous_sections"] == [x["section_no"] for x in r["results"]]
+    assert ex.stats == {"searches": 2, "top_k_clamped": 1, "duplicate_queries": 1}
+    other = ex.run("search_law_sections", {"query": "หยุดพักผ่อนประจำปี"})
+    assert "duplicate_query" not in other and "30" in [x["section_no"] for x in other["results"]]
 
 
 # ---------- LLM จำลอง: ลองอ้างมาตราที่ไม่มีจริงก่อน แล้วถูก policy ตีกลับ ----------
@@ -164,6 +216,25 @@ def test_last_step_only_terminal_tools():
     assert r["status"] == "need_more_facts"
     assert offered[-1] == ["request_more_facts", "submit_final_answer"]
     assert "search_law_sections" in offered[0]
+
+
+def test_agent_number_self_correction():
+    """อ้างมาตรา 96 ให้ตัวเลขที่ไม่มีในมาตรานั้น → ตีกลับพร้อมตัวบท 96 → ดึงมาตรา 70 → ผ่าน"""
+    store = make_number_store()
+    fa = {"issue_type": "unpaid_wages", "legal_issue": "กำหนดจ่ายค่าจ้าง", "facts_sufficient": True, "facts_to_verify": []}
+    script = iter([
+        _resp([_call(1, "get_law_section", {"section_nos": ["96"]})]),
+        _resp([_call(2, "submit_final_answer", {**fa, "answer": "จ่ายไม่น้อยกว่าเดือนละ 1 ครั้ง ตามมาตรา 96",
+                                                "citations": [{"section_no": "96"}]})]),
+        _resp([_call(3, "get_law_section", {"section_nos": ["70"]})]),
+        _resp([_call(4, "submit_final_answer", {**fa, "answer": "จ่ายไม่น้อยกว่าเดือนละ 1 ครั้ง ตามมาตรา 70",
+                                                "citations": [{"section_no": "70"}]})]),
+    ])
+    r = harness.Session(store, chat_fn=lambda *a, **k: next(script)).ask("เงินเดือนออกช้า ต้องจ่ายกี่ครั้ง")
+    sent = r["trace"][1]["result_sent_to_model"]
+    assert sent["status"] == "rejected_by_policy" and "96" in sent["exact_section_text"]
+    assert r["status"] == "answered" and r["final"]["issue_type"] == "unpaid_wages"
+    assert r["harness_stats"]["searches"] == 0
 
 
 def test_agent_gives_up_when_hallucinating():

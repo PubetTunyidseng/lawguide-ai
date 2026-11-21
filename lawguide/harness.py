@@ -57,12 +57,14 @@ class Session:
         self.model = model or config.LLM_MODEL
         self.temperature = config.TEMPERATURE if temperature is None else temperature
         self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        self.user_texts: list[str] = []      # ข้อความผู้ใช้ทุกข้อในเรื่องนี้ (mask แล้ว) เช่นคำตอบที่ตอบคำถามกลับ
         self.id = uuid.uuid4().hex[:8]
 
     def ask(self, question: str, use_llm_pii: bool | None = None) -> dict:
         t0 = time.time()
         guard = pii.guard(question, use_llm=use_llm_pii)
-        trace, executor = [], ToolExecutor(self.store)
+        trace = []
+        executor = ToolExecutor(self.store, user_texts=self.user_texts + [guard["masked_text"]])
         result = {"session": self.id, "question_masked": guard["masked_text"], "pii": guard,
                   "model": self.model, "trace": trace, "disclaimer": DISCLAIMER}
         if guard["blocked"]:
@@ -70,6 +72,7 @@ class Session:
             return self._finish(result, executor, t0)
 
         self.messages.append({"role": "user", "content": guard["masked_text"]})
+        self.user_texts.append(guard["masked_text"])
         retries_left, nudges = config.MAX_POLICY_RETRIES, 0
         final, status, violations = None, "max_steps", []
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
@@ -121,15 +124,19 @@ class Session:
                     event["policy_violations"] = v
                     if policy.blocking(v) and retries_left > 0:
                         retries_left -= 1
-                        # แนบตัวบทจริงของมาตราที่ยกข้อความผิด ให้โมเดลคัดลอกให้ตรง (self-correction)
-                        exact = {x["section_no"]: executor.seen_sections[x["section_no"]]["text"][:1500]
-                                 for x in v if x["rule"] == "QUOTE_MATCHES"
-                                 and x["section_no"] in executor.seen_sections}
+                        # แนบตัวบทจริงให้โมเดลเห็นว่ามาตราที่อ้างเขียนไว้ว่าอะไร (self-correction)
+                        # QUOTE_MATCHES → มาตราที่ยกข้อความผิด · NUMBER_GROUNDED → ทุกมาตราที่อ้าง
+                        nos = {x["section_no"] for x in v if x["rule"] == "QUOTE_MATCHES"}
+                        if any(x["rule"] == "NUMBER_GROUNDED" for x in v):
+                            nos |= {policy.norm_section_no(c.get("section_no", "")) for c in out.get("citations", [])}
+                        exact = {no: executor.seen_sections[no]["text"][:1500]
+                                 for no in sorted(nos) if no in executor.seen_sections}
                         out = {"status": "rejected_by_policy", "violations": v,
                                "exact_section_text": exact,
                                "instruction": "แก้คำตอบ: ตัวเลขและข้อความต้องตรงกับ exact_section_text "
                                               "ถ้ายกข้อความไม่ตรงให้เว้น quoted_text ว่าง และเอาเลขมาตราที่ยืนยันไม่ได้ออก "
-                                              "แล้ว submit_final_answer ใหม่"}
+                                              "ถ้ามาตราที่อ้างไม่มีตัวเลขที่เขียนไว้ ให้ค้นมาตราที่มีตัวเลขนั้นจริงมาอ้างแทน "
+                                              "หรือเอาตัวเลขนั้นออก แล้ว submit_final_answer ใหม่"}
                         event["result_sent_to_model"] = out
                     else:
                         final, violations = out, v
@@ -194,6 +201,7 @@ class Session:
             {"section_no": d["section_no"], "chapter": d["chapter"], "text": d["text"],
              "source_url": d["source_url"], "source_retrieved": d["source_retrieved"]}
             for d in executor.seen_sections.values()]
+        result["harness_stats"] = dict(executor.stats)
         result["latency_s"] = round(time.time() - t0, 2)
         result["timestamp"] = datetime.now().isoformat(timespec="seconds")
         self._log(result)

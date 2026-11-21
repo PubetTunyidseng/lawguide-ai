@@ -1,0 +1,584 @@
+{
+  "model": "qwen/qwen3-235b-a22b-2507",
+  "temperature": 0.2,
+  "repeats": 5,
+  "backend": "opensearch (opensearch-bm25)",
+  "questions": [
+    {
+      "id": "q01",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ],
+        [
+          "41",
+          "59"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q02",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ],
+        [
+          "41/1",
+          "59/2"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q03",
+      "expected": "ask_more",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": 1.0,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q04",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.933,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.617,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "118"
+        ],
+        [
+          "118",
+          "121",
+          "122"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118"
+        ],
+        [
+          "118",
+          "121"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q05",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.8,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.7,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "61"
+        ],
+        [
+          "61",
+          "70"
+        ],
+        [
+          "61"
+        ],
+        [
+          "61",
+          "70"
+        ],
+        [
+          "61"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q06",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ],
+        [
+          "32",
+          "57",
+          "76"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q07",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.5,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ],
+        [
+          "76",
+          "77"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q08",
+      "expected": "out_of_scope",
+      "gold_status": "final",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q09",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.9,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "123",
+          "124",
+          "125",
+          "70"
+        ],
+        [
+          "123",
+          "125",
+          "70"
+        ],
+        [
+          "123",
+          "124",
+          "125",
+          "70"
+        ],
+        [
+          "123",
+          "124",
+          "125",
+          "70"
+        ],
+        [
+          "123",
+          "124",
+          "125",
+          "70"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q10",
+      "expected": "answer_or_ask",
+      "gold_status": "final",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q11",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 0.867,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.8,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "118",
+          "119"
+        ],
+        [
+          "118",
+          "119"
+        ],
+        [
+          "118",
+          "119",
+          "123"
+        ],
+        [
+          "118",
+          "119"
+        ],
+        [
+          "118",
+          "119",
+          "123"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q12",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 0.8,
+      "mean_precision": 0.8,
+      "mean_key_facts": 0.7,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.45,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39/1"
+        ],
+        [
+          "39",
+          "40"
+        ],
+        [
+          "144",
+          "39/1"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q13",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": true,
+      "behaviors": [
+        "answer",
+        "answer",
+        "answer",
+        "answer",
+        "answer"
+      ],
+      "mean_recall": 1.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [
+          "70"
+        ],
+        [
+          "70"
+        ],
+        [
+          "70"
+        ],
+        [
+          "70"
+        ],
+        [
+          "70"
+        ]
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q14",
+      "expected": "answer",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "0/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "out_of_scope_or_unanswerable",
+        "ask_more",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable",
+        "out_of_scope_or_unanswerable"
+      ],
+      "mean_recall": null,
+      "mean_precision": null,
+      "mean_key_facts": null,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 1.0,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "unsupported_sentences": []
+    },
+    {
+      "id": "q15",
+      "expected": "answer_or_ask",
+      "gold_status": "draft_needs_legal_review",
+      "behavior_ok": "5/5",
+      "behavior_same_all_runs": false,
+      "behaviors": [
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "ask_more",
+        "answer"
+      ],
+      "mean_recall": 0.0,
+      "mean_precision": 1.0,
+      "mean_key_facts": 1.0,
+      "mean_question_coverage": null,
+      "citation_jaccard_mean": 0.6,
+      "runs_with_hallucination_attempt": 0,
+      "cited_sets": [
+        [],
+        [],
+        [],
+        [],
+        [
+          "118",
+          "17/1"
+        ]
+      ],
+      "unsupported_sentences": []
+    }
+  ]
+}

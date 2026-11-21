@@ -6,17 +6,21 @@
   faithfulness  (1) deterministic: มาตราที่อ้างอยู่ใน context ที่ tool คืนมาไหม
                 (2) --judge: ให้ LLM อีกตัวตัดสินทีละประโยคว่ามี context รองรับไหม (เก็บประโยคที่ไม่รองรับไว้ดู)
   hallucination จำนวนครั้งที่โมเดลพยายามอ้างมาตราที่ไม่มีจริง (นับจาก trace รวมรอบที่ policy ตีกลับ)
+  issue type    จำแนกประเด็นกฎหมายถูกไหม (เทียบ issue_type ที่โมเดลส่งกับ testset)
   key facts     คำตอบมีข้อเท็จจริงหลักตามตัวบทไหม เช่น จำนวนวัน อัตรา (testset: key_facts)
   question cov. ถามกลับครบข้อเท็จจริงที่จำเป็นไหม (testset: required_questions)
   consistency   ถามซ้ำ N รอบ: พฤติกรรมเหมือนกันไหม, ชุดมาตราที่อ้างซ้ำกันแค่ไหน (Jaccard เฉลี่ยรายคู่)
+  harness       harness เข้าไปคุมกี่ครั้ง: บังคับ top_k ขั้นต่ำ, กันค้นซ้ำ, policy ตีกลับแยกตามกฎ
 
 รัน:
   python eval/run_eval.py --repeats 5
   python eval/run_eval.py --repeats 5 --ids q01,q03 --model qwen/qwen-2.5-72b-instruct --judge
   python eval/run_eval.py --repeats 5 --model <open-source> --tag oss   แล้วเทียบกับ --model <commercial> --tag com
+  python eval/compare.py v3-hybrid v4-oss v4-com                          ตารางเทียบหลายรอบ
 ผลดิบทุกรอบ: eval/results/<tag>/raw_runs.jsonl  สรุป: summary.json, summary.md
 """
 import argparse
+import collections
 import itertools
 import json
 import re
@@ -100,6 +104,8 @@ def main():
     ap.add_argument("--tag", default="default")
     args = ap.parse_args()
 
+    if args.judge and args.judge_model == args.model:
+        print(f"⚠️ judge ใช้โมเดลเดียวกับที่ถูกประเมิน ({args.model}) — ควรตั้ง --judge-model หรือ JUDGE_MODEL เป็นโมเดลอื่น")
     tests = [json.loads(l) for l in (ROOT / "eval/testset.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
     if args.ids:
         keep = set(args.ids.split(","))
@@ -110,8 +116,13 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     raw_f = open(outdir / "raw_runs.jsonl", "w", encoding="utf-8")
     summary = {"model": args.model, "temperature": args.temperature, "repeats": args.repeats,
-               "backend": f"{config.BACKEND} ({store.name})", "questions": []}
+               "backend": f"{config.BACKEND} ({store.name})",
+               "judge_model": args.judge_model if args.judge else None,
+               "harness": {"MAX_STEPS": config.MAX_STEPS, "TOP_K": config.TOP_K, "MIN_TOP_K": config.MIN_TOP_K,
+                           "DUPLICATE_QUERY": config.DUPLICATE_QUERY, "MAX_POLICY_RETRIES": config.MAX_POLICY_RETRIES},
+               "questions": []}
 
+    all_rows = []
     for t in tests:
         runs = []
         for i in range(args.repeats):
@@ -126,7 +137,11 @@ def main():
             kf, kf_missing = coverage(answer_text, t.get("key_facts", [])) if beh == "answer" else (None, [])
             qtext = " ".join(f.get("questions", []) or [])
             qc, q_missing = coverage(qtext, t.get("required_questions", [])) if beh == "ask_more" else (None, [])
+            rejected_rules = [v["rule"] for e in r["trace"] if e.get("result_sent_to_model")
+                              for v in e.get("policy_violations", []) if v["severity"] == "block"]
             row = {"id": t["id"], "run": i + 1, "status": r["status"], "behavior": beh,
+                   "issue_type_expected": t.get("issue_type"), "issue_type_pred": f.get("issue_type"),
+                   "issue_type_ok": f.get("issue_type") == t.get("issue_type") if t.get("issue_type") else None,
                    "behavior_ok": behavior_ok(t["expected_behavior"], beh),
                    "cited": sorted(cited), "gold": sorted(gold),
                    "recall": round(len(cited & gold) / len(gold), 3) if score_cites else None,
@@ -137,6 +152,9 @@ def main():
                    "cited_in_context": sorted(c for c in cited if c in {x["section_no"] for x in r["context_returned"]}),
                    "hallucination_attempts": hallucination_attempts(r, valid),
                    "policy_rejections": sum(1 for e in r["trace"] if e.get("result_sent_to_model")),
+                   "policy_rejected_rules": rejected_rules,
+                   "final_violations": [v["rule"] for v in r.get("policy_violations") or []],
+                   "harness_stats": r.get("harness_stats", {}),
                    "tools_used": [e["tool"] for e in r["trace"] if e.get("tool")],
                    "answer": f.get("answer") or "; ".join(f.get("questions", [])),
                    "latency_s": r["latency_s"], "usage": r.get("usage")}
@@ -144,12 +162,19 @@ def main():
                 verdicts = judge(f["answer"], r["context_returned"], args.judge_model)
                 row["judge"] = verdicts
                 row["unsupported_sentences"] = [v["sentence"] for v in verdicts if v.get("supported") is False]
+                judged = [v for v in verdicts if v.get("supported") is not None]
+                row["judge_supported_ratio"] = round(sum(bool(v["supported"]) for v in judged) / len(judged), 3) \
+                    if judged else None
             runs.append(row)
+            all_rows.append(row)
             raw_f.write(json.dumps(row, ensure_ascii=False) + "\n")
             raw_f.flush()
-            print(f"{t['id']} run{i+1}: {row['behavior']:<28} cited={row['cited']} "
+            hs = row["harness_stats"]
+            print(f"{t['id']} run{i+1}: {row['behavior']:<28} issue={row['issue_type_pred']} cited={row['cited']} "
                   f"facts={row['key_facts']} miss={row['key_facts_missing'] or row['questions_missing']} "
-                  f"halluc={row['hallucination_attempts']} {row['latency_s']}s")
+                  f"halluc={row['hallucination_attempts']} rejected={rejected_rules} "
+                  f"clamp={hs.get('top_k_clamped')} dup={hs.get('duplicate_queries')} "
+                  f"unsupported={len(row.get('unsupported_sentences', []))} {row['latency_s']}s")
 
         pairs = list(itertools.combinations([set(r["cited"]) for r in runs], 2))
         behaviors = [r["behavior"] for r in runs]
@@ -163,13 +188,40 @@ def main():
             "mean_question_coverage": _mean([r["question_coverage"] for r in runs]),
             "citation_jaccard_mean": round(sum(jaccard(a, b) for a, b in pairs) / len(pairs), 3) if pairs else None,
             "runs_with_hallucination_attempt": sum(bool(r["hallucination_attempts"]) for r in runs),
+            "issue_type_ok": f"{sum(bool(r['issue_type_ok']) for r in runs)}/{len(runs)}" if t.get("issue_type") else None,
+            "mean_judge_supported": _mean([r.get("judge_supported_ratio") for r in runs]),
+            "policy_rejected_rules": dict(collections.Counter(x for r in runs for x in r["policy_rejected_rules"])),
+            "top_k_clamped": sum(r["harness_stats"].get("top_k_clamped", 0) for r in runs),
+            "duplicate_queries": sum(r["harness_stats"].get("duplicate_queries", 0) for r in runs),
             "cited_sets": [r["cited"] for r in runs],
             "unsupported_sentences": [s for r in runs for s in r.get("unsupported_sentences", [])],
         })
     raw_f.close()
+    summary["totals"] = totals(all_rows)
     (outdir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     (outdir / "summary.md").write_text(to_md(summary), encoding="utf-8")
     print(to_md(summary))
+
+
+def totals(rows: list) -> dict:
+    """ภาพรวมทั้งชุด — ตัวเลขแยกกัน ไม่รวมเป็นคะแนนเดียว"""
+    n = len(rows)
+    issue = [r["issue_type_ok"] for r in rows if r["issue_type_ok"] is not None]
+    return {"runs": n,
+            "behavior_ok": f"{sum(r['behavior_ok'] for r in rows)}/{n}",
+            "issue_type_ok": f"{sum(issue)}/{len(issue)}" if issue else None,
+            "mean_recall": _mean([r["recall"] for r in rows]),
+            "mean_precision": _mean([r["precision"] for r in rows]),
+            "mean_key_facts": _mean([r["key_facts"] for r in rows]),
+            "mean_question_coverage": _mean([r["question_coverage"] for r in rows]),
+            "runs_with_hallucination_attempt": sum(bool(r["hallucination_attempts"]) for r in rows),
+            "answers_with_unsupported_sentence": sum(bool(r.get("unsupported_sentences")) for r in rows
+                                                     if "judge" in r),
+            "judged_answers": sum("judge" in r for r in rows),
+            "policy_rejected_rules": dict(collections.Counter(x for r in rows for x in r["policy_rejected_rules"])),
+            "top_k_clamped": sum(r["harness_stats"].get("top_k_clamped", 0) for r in rows),
+            "duplicate_queries": sum(r["harness_stats"].get("duplicate_queries", 0) for r in rows),
+            "mean_latency_s": _mean([r["latency_s"] for r in rows])}
 
 
 def _mean(xs):
@@ -178,14 +230,19 @@ def _mean(xs):
 
 
 def to_md(s):
-    lines = [f"model `{s['model']}` · temperature {s['temperature']} · repeats {s['repeats']} · backend {s['backend']}",
-             "", "| id | expected | behavior ok | same all runs | recall | precision | key facts | question cov. | cite Jaccard | halluc runs | cited sets |",
-             "|---|---|---|---|---|---|---|---|---|---|---|"]
+    lines = [f"model `{s['model']}` · temperature {s['temperature']} · repeats {s['repeats']} · backend {s['backend']}"
+             + (f" · judge `{s['judge_model']}`" if s.get("judge_model") else ""),
+             "", "| id | expected | behavior ok | same all runs | issue ok | recall | precision | key facts | "
+             "question cov. | judge supported | cite Jaccard | halluc runs | policy rejected | clamp/dup | cited sets |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for q in s["questions"]:
         lines.append(f"| {q['id']} | {q['expected']} | {q['behavior_ok']} | {q['behavior_same_all_runs']} | "
-                     f"{q['mean_recall']} | {q['mean_precision']} | {q['mean_key_facts']} | {q['mean_question_coverage']} | "
-                     f"{q['citation_jaccard_mean']} | "
-                     f"{q['runs_with_hallucination_attempt']} | {q['cited_sets']} |")
+                     f"{q.get('issue_type_ok')} | {q['mean_recall']} | {q['mean_precision']} | {q['mean_key_facts']} | "
+                     f"{q['mean_question_coverage']} | {q.get('mean_judge_supported')} | {q['citation_jaccard_mean']} | "
+                     f"{q['runs_with_hallucination_attempt']} | {q.get('policy_rejected_rules') or ''} | "
+                     f"{q.get('top_k_clamped', 0)}/{q.get('duplicate_queries', 0)} | {q['cited_sets']} |")
+    if s.get("totals"):
+        lines += ["", "**รวมทั้งชุด**", ""] + [f"- {k}: {v}" for k, v in s["totals"].items()]
     return "\n".join(lines)
 
 

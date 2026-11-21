@@ -32,7 +32,7 @@ def render_answer(r):
         return out
     if not f:
         return f"(สถานะ: {r['status']})"
-    md = f"**ประเด็น:** {f.get('legal_issue', '-')}\n\n{f.get('answer', '')}\n\n"
+    md = f"**ประเด็น:** {f.get('legal_issue', '-')} · `{f.get('issue_type') or '-'}`\n\n{f.get('answer', '')}\n\n"
     if r["citations_rendered"]:
         md += "| กฎหมาย | มาตรา | ยืนยันกับฐานข้อมูล | แหล่งที่มา | วันที่ดึงตัวบท | วันที่ตรวจ |\n|---|---|---|---|---|---|\n"
         for c in r["citations_rendered"]:
@@ -59,9 +59,23 @@ def render_status(r):
     return "\n\n".join(lines)
 
 
+def _tool_note(e):
+    """สรุปผลแต่ละ step ให้เห็นว่า harness เข้าไปคุมตรงไหน"""
+    res = e.get("result") or {}
+    if e.get("result_sent_to_model"):
+        return "ตีกลับโดย policy: " + ", ".join(sorted({v["rule"] for v in e.get("policy_violations", [])}))
+    if isinstance(res, dict) and res.get("duplicate_query"):
+        return "ค้นซ้ำ → harness ไม่ค้นใหม่ ส่งคำแนะนำให้เปลี่ยนคำค้น"
+    if isinstance(res, dict) and "top_k_used" in res:
+        clamp = f" (ขอ top_k={res['top_k_requested']} → ใช้ {res['top_k_used']})" \
+            if res["top_k_used"] != res["top_k_requested"] else ""
+        return f"ได้ {res['n_results']} มาตรา ใหม่ {res.get('new_sections', [])}{clamp}"
+    return "ok"
+
+
 def render_tools(r):
     rows = [[e["step"], e.get("tool", e["type"]), json.dumps(e.get("arguments", {}), ensure_ascii=False),
-             "ตีกลับโดย policy" if e.get("result_sent_to_model") else "ok"] for e in r["trace"]]
+             _tool_note(e)] for e in r["trace"]]
     return rows or [["-", "-", "-", "-"]]
 
 

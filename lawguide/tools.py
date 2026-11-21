@@ -10,16 +10,24 @@
   request_more_facts    ถามข้อเท็จจริงเพิ่มเมื่อข้อมูลยังไม่พอ
   submit_final_answer   ส่งคำตอบสุดท้ายแบบมีโครงสร้าง (harness ตรวจการอ้างอิงต่อ)
 
-หมายเหตุ: ค้นคำพิพากษาศาลฎีกาไม่อยู่ใน MVP ตามคำแนะนำอาจารย์ (ต้องใช้ชุดที่ผู้เชี่ยวชาญตรวจแล้ว)
+หมายเหตุ: ไม่มี tool ค้นคำพิพากษาศาลฎีกาใน MVP — คำพิพากษาที่ข้อเท็จจริงคล้ายกันไม่ได้แปลว่าใช้กับกรณีของผู้ใช้ได้
+ถ้าจะเพิ่มต้องใช้ชุดที่ผู้มีความรู้กฎหมายตรวจแล้ว และต้องมี policy ตรวจเลขคำพิพากษาแบบเดียวกับเลขมาตรา
+
+harness guard ที่อยู่ในชั้นนี้ (ตั้งค่าใน .env):
+  MIN_TOP_K        โมเดลขอ top_k ต่ำกว่านี้ไม่ได้
+  DUPLICATE_QUERY  ค้นคำชุดเดิมซ้ำในคำถามเดียวกัน → ไม่ค้นซ้ำ ส่งผลเดิมพร้อมคำแนะนำ
 """
 import json
 import re
 
 from . import config
-from .store import norm_section_no
+from .store import _tok, norm_section_no
 
 AGENCIES = json.loads((config.DATA_DIR / "agencies.json").read_text(encoding="utf-8"))["procedures"]
 TERMINAL_TOOLS = {"request_more_facts", "submit_final_answer"}
+ISSUE_TYPES = sorted(AGENCIES) + ["out_of_scope"]
+ISSUE_TYPE_PARAM = {"type": "string", "enum": ISSUE_TYPES,
+                    "description": "ประเภทประเด็นกฎหมาย (ใช้ประเมินการจำแนกประเด็น) out_of_scope = ไม่ใช่เรื่อง พ.ร.บ.คุ้มครองแรงงาน"}
 
 TOOL_SCHEMAS = [
     {"type": "function", "function": {
@@ -28,7 +36,7 @@ TOOL_SCHEMAS = [
                        "วันที่ตรวจสอบ และคำเตือนกรณีมาตราอาจไม่ใช่ฉบับปัจจุบัน ใช้ภาษาไทยเป็นคำค้น",
         "parameters": {"type": "object", "properties": {
             "query": {"type": "string", "description": "คำค้นภาษาไทย เช่น 'ลาคลอด ค่าจ้าง' หรือ 'ค่าชดเชย เลิกจ้าง'"},
-            "top_k": {"type": "integer", "description": "จำนวนมาตราที่ต้องการ (1-10)"}},
+            "top_k": {"type": "integer", "description": f"จำนวนมาตราที่ต้องการ (ระบบคืนอย่างน้อย {config.MIN_TOP_K} สูงสุด {config.MAX_TOP_K})"}},
             "required": ["query"]}}},
     {"type": "function", "function": {
         "name": "get_law_section",
@@ -40,7 +48,8 @@ TOOL_SCHEMAS = [
     {"type": "function", "function": {
         "name": "verify_citation",
         "description": "ตรวจว่ามาตรานี้มีอยู่จริงในฐานข้อมูล และ (ถ้าให้ข้อความมา) ข้อความที่จะยกอ้างปรากฏอยู่ในมาตรานั้นจริง "
-                       "ต้องเรียกก่อนอ้างมาตราใดในคำตอบสุดท้าย",
+                       "ใช้เมื่อผู้ใช้อ้างเลขมาตรามาเอง หรือเมื่อต้องการตรวจข้อความก่อนยกอ้าง "
+                       "(ตอนส่งคำตอบ ระบบตรวจทุกการอ้างอิงซ้ำให้อยู่แล้ว)",
         "parameters": {"type": "object", "properties": {
             "section_no": {"type": "string"},
             "quoted_text": {"type": "string", "description": "ข้อความสั้น ๆ จากตัวบทที่จะยกอ้าง (ไม่บังคับ)"}},
@@ -55,14 +64,17 @@ TOOL_SCHEMAS = [
         "name": "request_more_facts",
         "description": "ใช้เมื่อข้อเท็จจริงยังไม่พอจะตอบได้ถูกต้อง ระบุว่าขาดข้อเท็จจริงอะไรและคำถามที่จะถามผู้ใช้ (จบรอบนี้)",
         "parameters": {"type": "object", "properties": {
+            "issue_type": ISSUE_TYPE_PARAM,
             "missing_facts": {"type": "array", "items": {"type": "string"}},
             "questions": {"type": "array", "items": {"type": "string"}},
             "partial_answer": {"type": "string", "description": "ข้อมูลเบื้องต้นที่ตอบได้แล้วจากตัวบท (ถ้ามี)"}},
-            "required": ["missing_facts", "questions"]}}},
+            "required": ["issue_type", "missing_facts", "questions"]}}},
     {"type": "function", "function": {
         "name": "submit_final_answer",
-        "description": "ส่งคำตอบสุดท้าย ทุกข้อความทางกฎหมายต้องมาจากมาตราที่ได้จาก tool ในรอบนี้และผ่าน verify_citation แล้ว",
+        "description": "ส่งคำตอบสุดท้าย ทุกข้อความทางกฎหมายต้องมาจากมาตราที่ได้จาก tool ในรอบนี้ "
+                       "ระบบจะตรวจเลขมาตรา ข้อความที่ยก และตัวเลขในคำตอบกับตัวบทก่อนแสดงผู้ใช้",
         "parameters": {"type": "object", "properties": {
+            "issue_type": ISSUE_TYPE_PARAM,
             "legal_issue": {"type": "string", "description": "ประเด็นกฎหมายที่จำแนกได้ เช่น 'สิทธิลาคลอด'"},
             "answer": {"type": "string", "description": "คำตอบภาษาไทย อ้าง 'มาตรา N' ทุกครั้งที่ใช้ตัวบท"},
             "citations": {"type": "array", "items": {"type": "object", "properties": {
@@ -72,7 +84,7 @@ TOOL_SCHEMAS = [
             "facts_to_verify": {"type": "array", "items": {"type": "string"},
                                 "description": "ข้อเท็จจริงที่ยังต้องตรวจสอบ/ยืนยัน"},
             "next_steps": {"type": "array", "items": {"type": "string"}}},
-            "required": ["legal_issue", "answer", "citations", "facts_sufficient", "facts_to_verify"]}}},
+            "required": ["issue_type", "legal_issue", "answer", "citations", "facts_sufficient", "facts_to_verify"]}}},
 ]
 
 
@@ -118,10 +130,14 @@ def _section_view(d: dict, max_chars: int) -> dict:
 class ToolExecutor:
     """รัน tool และจำว่าในรอบนี้ context ไหนถูกส่งให้โมเดลแล้ว (ใช้ตรวจ faithfulness ของการอ้างอิง)"""
 
-    def __init__(self, store):
+    def __init__(self, store, user_texts: list | None = None):
         self.store = store
         self.seen_sections: dict[str, dict] = {}     # section_no -> doc ที่ถูกคืนเป็น context
         self.verified: dict[str, dict] = {}          # section_no -> ผล verify_citation ล่าสุด
+        self.user_texts = list(user_texts or [])     # ข้อความผู้ใช้ (mask แล้ว) ใช้ตรวจว่าตัวเลขมาจากผู้ใช้หรือไม่
+        self.agency_texts: list[str] = []            # ผล find_agency_procedure (เบอร์ ระยะเวลา ฯลฯ)
+        self.queries: dict[tuple, list] = {}         # คำค้น (ชุดคำ) -> มาตราที่ได้ ใช้จับการค้นซ้ำ
+        self.stats = {"searches": 0, "top_k_clamped": 0, "duplicate_queries": 0}
 
     def _remember(self, docs):
         for d in docs:
@@ -138,11 +154,26 @@ class ToolExecutor:
 
     # ---------- tools ----------
     def t_search_law_sections(self, query: str, top_k: int | None = None):
-        k = max(1, min(int(top_k or config.TOP_K), 10))
+        self.stats["searches"] += 1
+        key = tuple(sorted(set(_tok(query))))
+        if config.DUPLICATE_QUERY == "skip" and key in self.queries:
+            self.stats["duplicate_queries"] += 1
+            return {"query": query, "duplicate_query": True, "n_results": 0, "results": [],
+                    "previous_sections": self.queries[key],
+                    "note": f"คำค้นชุดนี้ค้นไปแล้วในคำถามนี้ ได้มาตรา {self.queries[key] or 'ไม่พบ'} ค้นซ้ำจะได้ผลเดิม "
+                            "ให้เปลี่ยนคำค้น (คำในชีวิตประจำวันมักไม่ตรงกับศัพท์ที่ตัวบทใช้) "
+                            "ดึงมาตราจาก cited_by หรือส่งคำตอบว่าไม่พบในกฎหมายฉบับนี้"}
+        asked = int(top_k or config.TOP_K)
+        k = max(config.MIN_TOP_K, min(asked, config.MAX_TOP_K))
+        if k != asked:
+            self.stats["top_k_clamped"] += 1
         hits = self.store.search(query, k)
+        new = [h["section_no"] for h in hits if h["section_no"] not in self.seen_sections]
         self._remember(hits)
+        self.queries[key] = [h["section_no"] for h in hits]
         per = max(500, config.TOOL_RESULT_MAX_CHARS // max(len(hits), 1))
-        return {"query": query, "n_results": len(hits),
+        return {"query": query, "top_k_requested": asked, "top_k_used": k, "n_results": len(hits),
+                "new_sections": new,
                 "results": [{**_section_view(h, per), "score": h.get("score"), "retriever": h.get("retriever")}
                             for h in hits],
                 "note": "ใช้เฉพาะข้อความในผลลัพธ์นี้เป็นฐานของคำตอบ" if hits else
@@ -186,15 +217,16 @@ class ToolExecutor:
         p = AGENCIES.get(issue_type)
         if not p:
             return {"error": f"issue_type ต้องเป็นหนึ่งใน {sorted(AGENCIES)}"}
+        self.agency_texts.append(json.dumps(p, ensure_ascii=False))
         return {"issue_type": issue_type, **p,
                 "note": "related_sections เป็นเพียงจุดเริ่มค้น ต้องดึงตัวบทด้วย get_law_section ก่อนอ้าง"}
 
-    def t_request_more_facts(self, missing_facts, questions, partial_answer: str = ""):
-        return {"status": "need_more_facts", "missing_facts": missing_facts, "questions": questions,
-                "partial_answer": partial_answer}
+    def t_request_more_facts(self, missing_facts, questions, partial_answer: str = "", issue_type: str = ""):
+        return {"status": "need_more_facts", "issue_type": issue_type, "missing_facts": missing_facts,
+                "questions": questions, "partial_answer": partial_answer}
 
     def t_submit_final_answer(self, legal_issue, answer, citations, facts_sufficient, facts_to_verify,
-                              next_steps=None):
-        return {"status": "final", "legal_issue": legal_issue, "answer": answer, "citations": citations,
-                "facts_sufficient": facts_sufficient, "facts_to_verify": facts_to_verify,
+                              next_steps=None, issue_type: str = ""):
+        return {"status": "final", "issue_type": issue_type, "legal_issue": legal_issue, "answer": answer,
+                "citations": citations, "facts_sufficient": facts_sufficient, "facts_to_verify": facts_to_verify,
                 "next_steps": next_steps or []}
